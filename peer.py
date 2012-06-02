@@ -15,13 +15,49 @@ CHUNK_SIZE = 65536
 MAX_PEERS = 6
 MAX_FILES = 100
 
+class Connection(threading.Thread):
+    def __init__(self, peer):
+        self.peer_ = peer
+        threading.Thread.__init__(self)
+
+    def connect(self, addr, port):
+        self.addr = addr
+        self.port = port
+        self.recv_ = False
+        self.socket_ = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try :
+            print "about to connect to", addr, port
+            self.socket_.connect((addr, port))
+        except:
+            print "DEBUG: Cannot connect to peer"
+            return errPeerNotFound
+        return errOK
+
+    def receive(self, conn, addr, port):
+        self.addr = addr
+        self.port = port
+        self.socket_ = conn
+        self.recv_ = True
+        return errOK
+
+    def run(self):
+        print "connection complete to", self.addr, self.port
+        self.socket_.close()
+
+
+class Sync(threading.Thread):
+    def __init__(self, peer):
+        threading.Thread.__init__(self)
+        self.peer_ = peer
+
+
 class Peer(threading.Thread):
     def __init__(self, addr, port):
         threading.Thread.__init__(self)
         self.connected = False
         self.addr = addr
         self.port = port
-        self.peerConnections_ = []
+        self.peerConnections = []
         self.peers_ = Peers()
         self.listen()
 
@@ -33,10 +69,13 @@ class Peer(threading.Thread):
         listener.start()
 
     def listener(self):
-        while False: #TODO
-            conn, addr = self.socket.accept()
-            print "connected to", addr, conn
-            self.peerConnections_.append(conn)
+        while True:
+            conn, fullAddr = self.socket.accept()
+            print "listener connected to", addr, conn
+            connection = Connection(self)
+            connection.receive(conn, fullAddr[0], fullAddr[1])
+            connection.start()
+            self.peerConnections.append(connection)
             break
 
     def join(self):
@@ -44,7 +83,12 @@ class Peer(threading.Thread):
             return errOK # already connected, no need to join
         if peers.empty():
             return errNoPeersFound
-
+        connectedPeers = 0
+        for peer in self.peers_:
+            if peer[0]
+            conn = Connection(self)
+            conn.connect(peer[0], peer[1])
+            conn.start()
 
     def insert(self, fileName):
         pass
@@ -62,7 +106,7 @@ class Peers:
     # TODO should be a filename, not a string
     # TODO peers file shouldn't be specified - it will be peers.txt in base dir
     def __init__(self):
-        self.parsePeersFile('')
+        self.parsePeersFile('localhost 50001')
 
     def parsePeersFile(self, peersFile):
         if peersFile is '':
@@ -73,7 +117,7 @@ class Peers:
                 addr, port = peerConnection.split(' ')
                 port = int(port)
                 self.peers_.append((addr, port))
-                print "added", addr, port
+                print 'added', addr, port, 'to peers file'
         except:
             print 'DEBUG: Error parsing peers file'
 
