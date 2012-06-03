@@ -51,29 +51,36 @@ class Connection(threading.Thread):
             data = repr(data)
             addr, port = data[1:-1].split(':') # 'addr port' into (addr, port)
             port = int(port)
+
             if self.peer_.alreadyHasConnection(addr, port):
                 print self.peer_.name, '- receiver closing duplicate connection'
                 self.socket_.sendall('close')
                 self.socket_.close()
                 self.active = False
-                return
             self.socket_.sendall('idle')
+
         else:
             self.socket_.sendall(self.peer_.addr + ':' + str(self.peer_.port))
 
-        while True:
+        while self.active:
             data = self.socket_.recv(1024)
             data = repr(data)[1:-1]
             print self.peer_.name, '- received', data
+
             if data == 'idle':
                 if self.action == 'idle':
                     time.sleep(.5) # avoid spamming the network with idles
+
                 self.socket_.sendall(self.action)
+
+                if self.action == 'close':
+                    self.socket_.close()
+                    self.active = False
+
             if data == 'close':
                 print self.peer_.name, '- connector closing connection'
                 self.socket_.close()
                 self.active = False
-                return
 
 
 class Sync(threading.Thread):
@@ -151,11 +158,14 @@ class Peer(threading.Thread):
     def listener(self):
         while self.connected:
             conn, fullAddr = self.socket.accept()
+            if not self.connected:
+                break
             connection = Connection(self)
             connection.receive(conn)
             connection.start()
             self.peerConnections.append(connection)
-
+        print self.name, '- closing listener thread'
+        conn.close()
 
     def alreadyHasConnection(self, addr, port):
         for conn in self.peerConnections:
@@ -164,13 +174,19 @@ class Peer(threading.Thread):
         return False
 
     def insert(self, fileName):
-        pass
+        return errOK
 
     def query(self, status):
-        pass
+        return errOK
 
     def leave(self):
-        pass
+        self.connected = False
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect((self.addr, self.port)) # connect to self to close to listener thread
+        s.close()
+        for conn in self.peerConnections:
+            conn.action = 'close'
+        return errOK
 
 
 class FileStatus:
@@ -200,5 +216,9 @@ status1 = p1.join()
 status2 = p2.join()
 
 time.sleep(1)
+
+p1.leave()
+p2.leave()
+
 print 'p1 join status:', status1
 print 'p2 join status:', status2
