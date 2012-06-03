@@ -19,29 +19,61 @@ class Connection(threading.Thread):
     def __init__(self, peer):
         self.peer_ = peer
         threading.Thread.__init__(self)
+        self.action = 'idle'
 
     def connect(self, addr, port):
+        self.active = False # false when the connection is closed
         self.addr = addr
         self.port = port
         self.recv_ = False
         self.socket_ = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try :
             self.socket_.connect((addr, port))
+            self.active = True
         except:
-            print "DEBUG: Cannot connect to peer", addr, port
+            print 'DEBUG:', self.peer_.name, '- Cannot connect to peer', addr, port
             return errPeerNotFound
         return errOK
 
-    def receive(self, conn, addr, port):
-        self.addr = addr
-        self.port = port
+    def receive(self, conn):
+        self.active = True
+        self.addr = self.port = 0
         self.socket_ = conn
         self.recv_ = True
         return errOK
 
+    def setAction(action):
+        self.action = action
+
     def run(self):
-        print "connection complete to", self.addr, self.port
-        self.socket_.close()
+        if self.recv_:
+            data = self.socket_.recv(1024)
+            data = repr(data)
+            addr, port = data[1:-1].split(':') # 'addr port' into (addr, port)
+            port = int(port)
+            if self.peer_.alreadyHasConnection(addr, port):
+                print self.peer_.name, '- receiver closing duplicate connection'
+                self.socket_.sendall('close')
+                self.socket_.close()
+                self.active = False
+                return
+            self.socket_.sendall('idle')
+        else:
+            self.socket_.sendall(self.peer_.addr + ':' + str(self.peer_.port))
+
+        while True:
+            data = self.socket_.recv(1024)
+            data = repr(data)[1:-1]
+            print self.peer_.name, '- received', data
+            if data == 'idle':
+                if self.action == 'idle':
+                    time.sleep(.5) # avoid spamming the network with idles
+                self.socket_.sendall(self.action)
+            if data == 'close':
+                print self.peer_.name, '- connector closing connection'
+                self.socket_.close()
+                self.active = False
+                return
 
 
 class Sync(threading.Thread):
@@ -53,11 +85,12 @@ class Sync(threading.Thread):
 class Peer(threading.Thread):
     def __init__(self, addr, port):
         threading.Thread.__init__(self)
-        self.connected = False
+        self.name = addr + ':' + str(port)
+        self.connected = False # becomes true after join() is called
         self.addr = addr
         self.port = port
-        self.peerConnections = []
-        self.peers_ = []
+        self.peerConnections = [] # the list of sockets for each peer
+        self.peers_ = [] # the list of peers to connect to when join is called
         self.parsePeersFile()
         self.listen()
 
@@ -71,15 +104,12 @@ class Peer(threading.Thread):
     def listener(self):
         while True:
             conn, fullAddr = self.socket.accept()
-            print "listener connected to", fullAddr
             connection = Connection(self)
-            connection.receive(conn, fullAddr[0], fullAddr[1])
+            connection.receive(conn)
             connection.start()
             self.peerConnections.append(connection)
-            break
 
-    # TODO should be a filename, not a string
-    # TODO peers file shouldn't be specified - it will be peers.txt in base dir
+    # TODO peersFile should be a filename, not a string that we parse
     def parsePeersFile(self):
         peersFile = PEERS_FILE
         if peersFile == '':
@@ -90,9 +120,9 @@ class Peer(threading.Thread):
                 addr, port = peerConnection.split(' ')
                 port = int(port)
                 self.peers_.append((addr, port))
-                print 'added', addr, port, 'from peers file'
+                #print 'added', addr, port, 'from peers file'
         except:
-            print 'DEBUG: Error parsing peers file'
+            print 'DEBUG:', self.name, '- Error parsing peers file'
 
     def join(self):
         if self.connected:
@@ -104,21 +134,31 @@ class Peer(threading.Thread):
         failedToConnect = False
         for peer in self.peers_:
             if peer[0] == self.addr and peer[1] == self.port:
-                print "skipping adding self - ", peer
+                #print 'skipping adding self - ', peer
                 continue
+
             conn = Connection(self)
             status = conn.connect(peer[0], peer[1])
             if status == errPeerNotFound:
+                #print 'failed to connect to', peer
                 failedToConnect = True
             else:
                 conn.start()
+                self.peerConnections.append(conn)
                 connectedPeers += 1
+                #print 'connected to', peer
 
         if connectedPeers == 0:
             return errNoPeersFound
         if failedToConnect:
             return errPeerNotFound
         return errOK
+
+    def alreadyHasConnection(self, addr, port):
+        for conn in self.peerConnections:
+            if conn.addr == addr and conn.port == port:
+                return True
+        return False
 
     def insert(self, fileName):
         pass
@@ -130,10 +170,15 @@ class Peer(threading.Thread):
         pass
 
 
+class FileStatus:
+    files = []
+
+
 class File:
-    name_ = ''
-    localChunks_ = 0
-    totalChunks_ = 0
+    name = ''
+    localChunks = []
+    totalChunks = 0
+    status = 'need'
 
 
 class Status:
@@ -144,11 +189,17 @@ class Status:
     averageReplicationLevel_ = -1
 
 
-PEERS_FILE = 'localhost 50001\nlocalhost 50002'
+PEERS_FILE = '127.0.0.1 10001\n127.0.0.1 10002'
 
-p1 = Peer('localhost', 50001)
-p2 = Peer('localhost', 50002)
+p1 = Peer('127.0.0.1', 10001)
+p2 = Peer('127.0.0.1', 10002)
+
 time.sleep(.1)
 status = p1.join()
 time.sleep(.1)
 print 'p1 join status:', status
+
+time.sleep(.1)
+status = p2.join()
+time.sleep(.1)
+print 'p2 join status:', status
