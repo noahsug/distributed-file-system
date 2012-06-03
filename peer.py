@@ -92,22 +92,6 @@ class Peer(threading.Thread):
         self.peerConnections = [] # the list of sockets for each peer
         self.peers_ = [] # the list of peers to connect to when join is called
         self.parsePeersFile()
-        self.listen()
-
-    def listen(self):
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.bind((self.addr, self.port))
-        self.socket.listen(3)
-        listener = threading.Thread(target=self.listener)
-        listener.start()
-
-    def listener(self):
-        while True:
-            conn, fullAddr = self.socket.accept()
-            connection = Connection(self)
-            connection.receive(conn)
-            connection.start()
-            self.peerConnections.append(connection)
 
     # TODO peersFile should be a filename, not a string that we parse
     def parsePeersFile(self):
@@ -129,6 +113,9 @@ class Peer(threading.Thread):
             return errOK # already connected, no need to join
         if len(self.peers_) == 0:
             return errNoPeersFound
+
+        self.connected = True
+        self.listen()
 
         connectedPeers = 0
         failedToConnect = False
@@ -153,6 +140,22 @@ class Peer(threading.Thread):
         if failedToConnect:
             return errPeerNotFound
         return errOK
+
+    def listen(self):
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.bind((self.addr, self.port))
+        self.socket.listen(3)
+        listener = threading.Thread(target=self.listener)
+        listener.start()
+
+    def listener(self):
+        while self.connected:
+            conn, fullAddr = self.socket.accept()
+            connection = Connection(self)
+            connection.receive(conn)
+            connection.start()
+            self.peerConnections.append(connection)
+
 
     def alreadyHasConnection(self, addr, port):
         for conn in self.peerConnections:
@@ -193,13 +196,9 @@ PEERS_FILE = '127.0.0.1 10001\n127.0.0.1 10002'
 
 p1 = Peer('127.0.0.1', 10001)
 p2 = Peer('127.0.0.1', 10002)
+status1 = p1.join()
+status2 = p2.join()
 
-time.sleep(.1)
-status = p1.join()
-time.sleep(.1)
-print 'p1 join status:', status
-
-time.sleep(.1)
-status = p2.join()
-time.sleep(.1)
-print 'p2 join status:', status
+time.sleep(1)
+print 'p1 join status:', status1
+print 'p2 join status:', status2
