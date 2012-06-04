@@ -37,7 +37,7 @@ class Connection(threading.Thread):
 
     def receive(self, conn):
         self.active = True
-        self.addr = self.port = 0
+        self.addr = self.port = 0 # we don't know the port or addr until the connection has been made
         self.socket_ = conn
         self.recv_ = True
         return errOK
@@ -49,7 +49,7 @@ class Connection(threading.Thread):
         if self.recv_:
             data = self.socket_.recv(1024)
             data = repr(data)
-            addr, port = data[1:-1].split(':') # 'addr port' into (addr, port)
+            addr, port = data[1:-1].split(':')
             port = int(port)
 
             if self.peer_.alreadyHasConnection(addr, port):
@@ -96,8 +96,8 @@ class Peer(threading.Thread):
         self.connected = False # becomes true after join() is called
         self.addr = addr
         self.port = port
-        self.status = FileStatus() # keeps track of what file chunks we have/need
-        self.storage = Storage() # Interface to write/read to/from the disk
+        self.storage = Storage(port) # Interface to write/read to/from the disk
+        self.status = FileStatus(self.storage) # keeps track of what file chunks we have/need
         self.peerConnections = [] # the list of sockets for each peer
         self.peers_ = [] # the list of peers to connect to when join is called
         self.parsePeersFile(peersFile)
@@ -113,7 +113,6 @@ class Peer(threading.Thread):
                 addr, port = peerConnection.split(' ')
                 port = int(port)
                 self.peers_.append((addr, port))
-                #print 'added', addr, port, 'from peers file'
         except:
             print 'DEBUG:', self.name, '- Error parsing peers file'
 
@@ -123,6 +122,8 @@ class Peer(threading.Thread):
         if len(self.peers_) == 0:
             return errNoPeersFound
 
+        self.status.addLocalFiles() # add all files that already exist locally in the peer folder
+
         self.connected = True
         self.listen()
 
@@ -130,19 +131,16 @@ class Peer(threading.Thread):
         failedToConnect = False
         for peer in self.peers_:
             if peer[0] == self.addr and peer[1] == self.port:
-                #print 'skipping adding self - ', peer
                 continue
 
             conn = Connection(self)
             status = conn.connect(peer[0], peer[1])
             if status == errPeerNotFound:
-                #print 'failed to connect to', peer
                 failedToConnect = True
             else:
                 conn.start()
                 self.peerConnections.append(conn)
                 connectedPeers += 1
-                #print 'connected to', peer
 
         if connectedPeers == 0:
             return errNoPeersFound
@@ -176,7 +174,7 @@ class Peer(threading.Thread):
         return False
 
     def insert(self, fileName):
-        FileStatus
+        self.status.addLocalFile(fileName)
         return errOK
 
     def query(self, status):
@@ -198,24 +196,31 @@ class FileStatus:
     def __init__(self, storage):
         self.storage = storage
 
+    def addLocalFiles(self):
+        # TODO get all files in the file system (storage.getLocalFiles) and add them (self.addLocalFile)
+        pass
+
     # TODO read from disk and store file under peer folder
     def addLocalFile(self, fileName):
         self.storage.writeFile(fileName)
         numChunks = self.storage.getNumChunks(fileName)
         chunks = [Chunk(Chunk.HAS) for i in range(0, numChunks)] # for now I'm just using the file name and each chunk is one character :)
-        files[fileName] = chunks
+        self.files[fileName] = chunks
+        print 'added local file', self.serialize()
 
     def addRemoteFile(self, peer, fileName, maxChunks, chunks):
         if fileName in files:
-            file = files[fileName]
+            file = self.files[fileName]
         else:
             file = [Chunk() for i in range(0, maxChunks)]
-            files[fileName] = file
+            self.files[fileName] = file
         for peerOwnedChunk in chunks:
             file[peerOwnedChunk].peers.add(peer)
 
     def serialize(self):
-        return 'serialized with len', len(files)
+        text = ''
+        for fileName, file in self.files:
+            text += fileName + ';' + len(file)
 
 
 class Storage:
@@ -276,7 +281,7 @@ status2 = p2.join()
 
 time.sleep(.5)
 
-
+p1.insert('noah.txt')
 
 time.sleep(.5)
 
