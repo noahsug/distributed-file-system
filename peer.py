@@ -3,6 +3,7 @@
 import time
 import threading
 import socket
+import sets
 
 errOK             =  0; # Everything good
 errUnknownWarning =  1; # Unknown warning
@@ -11,9 +12,8 @@ errCannotConnect  = -3; # Cannot connect to anything; fatal error
 errNoPeersFound   = -4; # Cannot find any peer (e.g., no peers in a peer file); fatal
 errPeerNotFound   =  5; # Cannot find some peer; warning, since others may be connectable
 
-CHUNK_SIZE = 65536
-MAX_PEERS = 6
-MAX_FILES = 100
+#CHUNK_SIZE = 65536
+CHUNK_SIZE = 1 # TODO temporarily making it 1 to make development easier
 
 class Connection(threading.Thread):
     def __init__(self, peer):
@@ -90,19 +90,21 @@ class Sync(threading.Thread):
 
 
 class Peer(threading.Thread):
-    def __init__(self, addr, port):
+    def __init__(self, addr, port, peersFile='peers.txt'):
         threading.Thread.__init__(self)
         self.name = addr + ':' + str(port)
         self.connected = False # becomes true after join() is called
         self.addr = addr
         self.port = port
+        self.status = FileStatus() # keeps track of what file chunks we have/need
+        self.storage = Storage() # Interface to write/read to/from the disk
         self.peerConnections = [] # the list of sockets for each peer
         self.peers_ = [] # the list of peers to connect to when join is called
-        self.parsePeersFile()
+        self.parsePeersFile(peersFile)
 
     # TODO peersFile should be a filename, not a string that we parse
-    def parsePeersFile(self):
-        peersFile = PEERS_FILE
+    def parsePeersFile(self, fileName):
+        peersFile = self.storage.readFile(fileName)
         if peersFile == '':
             return
         try:
@@ -174,6 +176,7 @@ class Peer(threading.Thread):
         return False
 
     def insert(self, fileName):
+        FileStatus
         return errOK
 
     def query(self, status):
@@ -190,22 +193,78 @@ class Peer(threading.Thread):
 
 
 class FileStatus:
-    files = []
+    files = {} # mapping of name to array of chunks
+
+    def __init__(self, storage):
+        self.storage = storage
+
+    # TODO read from disk and store file under peer folder
+    def addLocalFile(self, fileName):
+        self.storage.writeFile(fileName)
+        numChunks = self.storage.getNumChunks(fileName)
+        chunks = [Chunk(Chunk.HAS) for i in range(0, numChunks)] # for now I'm just using the file name and each chunk is one character :)
+        files[fileName] = chunks
+
+    def addRemoteFile(self, peer, fileName, maxChunks, chunks):
+        if fileName in files:
+            file = files[fileName]
+        else:
+            file = [Chunk() for i in range(0, maxChunks)]
+            files[fileName] = file
+        for peerOwnedChunk in chunks:
+            file[peerOwnedChunk].peers.add(peer)
+
+    def serialize(self):
+        return 'serialized with len', len(files)
 
 
-class File:
-    name = ''
-    localChunks = []
-    totalChunks = 0
-    status = 'need'
+class Storage:
+    def __init__(self, port):
+        # TODO create a folder called peer<port number>
+        pass
+
+    def writeFile(self, fileName):
+        # TODO write file locally
+        pass
+
+    # TODO hardcoded for now
+    def readFile(self, fileName):
+        return PEERS_FILE
+
+    # TODO for now I'm just saying each character of the file name is a chunk in the file :)
+    def getChunk(self, fileName, chunk):
+        return fileName[chunk]
+
+    def getNumChunks(self, fileName):
+        return len(fileName)
+
+
+class Chunk:
+    NEED = 'n'
+    HAS = 'h'
+    GETTING = 'g'
+    gettingFrom = '' # addr:port of the peer currently transferring this file to us
+    peers = sets.Set() # set of peers that have this chunk
+
+    def __init__(self, status=NEED):
+        self.status = status
 
 
 class Status:
-    numFiles_ = -1
-    fractionPresentLocally_ = -1
-    fractionPresent_ = -1
-    minimumReplicationLevel_ = -1
-    averageReplicationLevel_ = -1
+    def numFiles(self):
+        return 0
+
+    def fractionPresentLocally(self, fileNum):
+        return -1
+
+    def fractionPresent(self, fileNum):
+        return -1
+
+    def minimumReplicationLevel(self, fileNum):
+        return -1
+
+    def averageReplicationLevel(self, fileNum):
+        return -1
 
 
 PEERS_FILE = '127.0.0.1 10001\n127.0.0.1 10002'
@@ -215,7 +274,11 @@ p2 = Peer('127.0.0.1', 10002)
 status1 = p1.join()
 status2 = p2.join()
 
-time.sleep(1)
+time.sleep(.5)
+
+
+
+time.sleep(.5)
 
 p1.leave()
 p2.leave()
