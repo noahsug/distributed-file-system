@@ -217,11 +217,19 @@ class FileStatus:
         for peerOwnedChunk in chunks:
             file[peerOwnedChunk].peers.add(peer)
 
+    # status of what chunks we own: 8noah.txt7,1,2,3,5,6\n - "I have chunks 1, 2, 3, 5, 6 of noah.txt which has 7 chunks total"
     def serialize(self):
         text = ''
-        for fileName, file in self.files:
-            text += fileName + ';' + len(file)
-
+        first = True
+        for fileName in self.files:
+            chunks = self.files[fileName]
+            if not first:
+                text += '\n'
+            text += "%d%s%d" % (len(fileName), fileName, len(chunks))
+            for i, chunk in enumerate(chunks):
+                if chunk.status == Chunk.HAS:
+                    text += ',' + str(i)
+        return text
 
 class Storage:
     def __init__(self, port):
