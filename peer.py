@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import Queue
+import re
 import sets
 import socket
 import sys
@@ -14,16 +15,7 @@ errCannotConnect  = -3; # Cannot connect to anything; fatal error
 errNoPeersFound   = -4; # Cannot find any peer (e.g., no peers in a peer file); fatal
 errPeerNotFound   =  5; # Cannot find some peer; warning, since others may be connectable
 
-#CHUNK_SIZE = 65536
-CHUNK_SIZE = 1024
-
-# helper functions for encoding and decoding file names
-def encode(text):
-    return text.replace('\\', '\\\\').replace(';', '\\;')
-
-def decode(text):
-    return text.replace('\\;', ';').replace('\\\\', '\\')
-
+CHUNK_SIZE = 65536
 
 class Connection(threading.Thread):
     IDLE = 'i'
@@ -34,34 +26,35 @@ class Connection(threading.Thread):
         self.peer_ = peer
         threading.Thread.__init__(self)
         self.actions = [self.UPDATE]
-        self.currentAction = 0
-        self.receivedData = Queue.Queue()
 
     def addAction(self, action):
         self.actions.append(action)
 
     def getAction(self):
-        if self.currentAction >= len(self.actions):
+        if len(self.actions) == 0:
             return self.IDLE
-        return self.actions[self.currentAction]
+        return self.actions[0]
 
     def connect(self, addr, port):
         self.active = False # false when the connection is closed
         self.addr = addr
         self.port = port
+        self.id = "%s:%d" % (self.addr, self.port)
         self.isReceiver_ = False
         self.socket_ = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try :
             self.socket_.connect((addr, port))
             self.active = True
         except:
-            print 'DEBUG:', self.peer_.name, '- Cannot connect to peer', addr, port
+            print 'DEBUG:', self.peer_.id, '- Cannot connect to peer', addr, port
             return errPeerNotFound
         return errOK
 
     def receive(self, conn):
         self.active = True
-        self.addr = self.port = 0 # we don't know the port or addr until the connection has been made
+        # we don't know the port or addr until the connection has been made
+        self.addr = ''
+        self.port = 0
         self.socket_ = conn
         self.isReceiver_ = True
         return errOK
@@ -70,7 +63,7 @@ class Connection(threading.Thread):
         if self.isReceiver_:
             self.initRecveiver()
         else: # we are the connector - send addr and port to start the connection
-            self.socket_.sendall(self.peer_.addr + ':' + str(self.peer_.port))
+            self.socket_.sendall(self.peer_.id)
 
         while self.active:
             self.takeRequest()
@@ -82,11 +75,14 @@ class Connection(threading.Thread):
         port = int(port)
 
         if self.peer_.alreadyHasConnection(addr, port):
-            print self.peer_.name, '- receiver closing duplicate connection'
+            print self.peer_.id, '- closing duplicate connection to', addr, port
             self.socket_.sendall(self.CLOSE)
             self.socket_.close()
             self.active = False
         else:
+            self.addr = addr
+            self.port = port
+            self.id = "%s:%d" % (self.addr, self.port)
             self.sendRequest()
 
     def takeRequest(self):
@@ -94,10 +90,10 @@ class Connection(threading.Thread):
         data = repr(data)[1:-1]
         request = data[0] # the first character is the request
         data = data[1:] # the rest is the data
-        print self.peer_.name, '- received', request, data
+        print self.peer_.id, '- received', request, data, 'from', self.id
 
         if request == self.UPDATE:
-            self.peer_.files.update(data)
+            self.peer_.files.update(self.id, data)
             self.socket_.sendall(self.peer_.files.serialize())
 
         if request == self.IDLE:
@@ -113,14 +109,16 @@ class Connection(threading.Thread):
         action = self.getAction()
 
         if action == self.UPDATE:
+            print self.peer_.id, 'is telling', self.id, 'to update'
             msg = "%s%s" % (self.UPDATE, self.peer_.files.serialize())
             self.socket_.sendall(msg)
 
             data = self.socket_.recv(CHUNK_SIZE)
             data = repr(data)[1:-1]
-            self.peer_.files.update(data)
+            print self.peer_.id, '- received update data', data, 'from', self.id
+            self.peer_.files.update(self.id, data)
 
-            self.currentAction += 1
+            self.actions.pop(0)
             self.socket_.sendall(self.IDLE)
 
         if action == self.IDLE:
@@ -134,10 +132,10 @@ class Connection(threading.Thread):
 
 class Peer():
     def __init__(self, addr, port, peersFile='peers.txt'):
-        self.name = addr + ':' + str(port)
         self.connected = False # becomes true after join() is called
         self.addr = addr
         self.port = port
+        self.id = "%s:%d" % (self.addr, self.port)
         self.storage = Storage(port) # Interface to write/read to/from the disk
         self.files = FileStatus(self.storage) # keeps track of what file chunks we have/need
         self.peerConnections = [] # the list of sockets for each peer
@@ -156,7 +154,7 @@ class Peer():
                 port = int(port)
                 self.peers_.append((addr, port))
         except:
-            print 'DEBUG:', self.name, '- Error parsing peers file'
+            print 'DEBUG:', self.id, '- Error parsing peers file'
 
     # API method
     def join(self):
@@ -175,7 +173,7 @@ class Peer():
         failedToConnect = False
         for peer in self.peers_:
             if peer[0] == self.addr and peer[1] == self.port:
-                continue
+                continue # don't connect to youself
 
             conn = Connection(self)
             status = conn.connect(peer[0], peer[1])
@@ -195,6 +193,8 @@ class Peer():
     # API method
     def insert(self, fileName):
         self.files.addLocalFile(fileName)
+        for conn in self.peerConnections:
+            conn.addAction(Connection.UPDATE)
         return errOK
 
     # API method
@@ -223,6 +223,7 @@ class Peer():
 
     def listen(self):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.socket.bind((self.addr, self.port))
         self.socket.listen(3)
         self.listener = threading.Thread(target=self.listener)
@@ -237,7 +238,7 @@ class Peer():
             connection.receive(conn)
             connection.start()
             self.peerConnections.append(connection)
-        print self.name, '- closing listener thread'
+        print self.id, '- closing listener thread'
         conn.close()
 
     def startSync(self):
@@ -245,11 +246,8 @@ class Peer():
         self.syncer.start()
 
     def syncer(self):
-        # get list of files / chunks each other peer has
-
-
         while self.connected:
-#            print self.name, '- LRC:', self.files.getLeastReplicatedChunk()
+#            print self.id, '- LRC:', self.files.getLeastReplicatedChunk()
             time.sleep(.2)
 #            for chunks in self.files:
 #                for chunk in chunks:
@@ -280,23 +278,20 @@ class Peer():
 class FileStatus:
     HAVE_ALL_FILES = 0
     NO_FILES = 'n'
-    files = {} # mapping of name to array of chunks
 
     def __init__(self, storage):
-        self.storage = storage
+        self.files = {} # mapping of file name to array of chunks
+        self.storage_ = storage
+        self.lock_ = threading.Lock() # prob will need to use this somewhere
 
     def addLocalFiles(self):
         # TODO get all files in the file system (storage.getLocalFiles) and add them (self.addLocalFile)
         pass
 
-    # update
-    def update(self, data):
-        pass
-
     def addLocalFile(self, fileName):
-        self.storage.writeFile(fileName)
-        numChunks = self.storage.getNumChunks(fileName)
-        chunks = [Chunk(Chunk.HAS) for i in range(0, numChunks)] # for now I'm just using the file name and each chunk is one character :)
+        self.storage_.writeFile(fileName)
+        numChunks = self.storage_.getNumChunks(fileName)
+        chunks = [Chunk(Chunk.HAS) for i in range(0, numChunks)]
         self.files[fileName] = chunks
         print 'added local file', self.serialize()
 
@@ -308,6 +303,7 @@ class FileStatus:
             self.files[fileName] = file
         for peerOwnedChunk in chunks:
             file[peerOwnedChunk].peers.add(peer)
+        print 'added remote file from', peer, self.serialize()
 
     def getLeastReplicatedChunk(self):
         bestFileName = ''
@@ -328,22 +324,42 @@ class FileStatus:
             return self.HAVE_ALL_FILES
         return (bestFileName, bestChunk)
 
+    def update(self, peer, data):
+        if data == self.NO_FILES:
+            return
+        files = re.split('(?<!\\\)#', data)
+        for file in files:
+            fileName, chunkInfo = re.split('(?<!\\\);', file)
+            chunkInfo = chunkInfo.split(',')
+            fileName = self.decode(fileName)
+            chunks = [int(i) for i in chunkInfo[1:]]
+            maxChunks = int(chunkInfo[0])
+            self.addRemoteFile(peer, fileName, maxChunks, chunks)
 
-    # status of what chunks we own: noah.txt7,1,2,3,5,6;etc.. - "I have chunks 1, 2, 3, 5, 6 of noah.txt which has 7 chunks total"
+    # status of what chunks we own: noah.txt;7,1,2,3,5,6#etc.. - "I have chunks 1, 2, 3, 5, 6 of noah.txt which has 7 chunks total"
     def serialize(self):
-        if len(self.files) == 0:
-            return self.NO_FILES
         text = ''
         first = True
         for fileName in self.files:
             chunks = self.files[fileName]
-            if not first:
-                text += ';'
-            text += "%s%d" % (encode(fileName), len(chunks))
+            chunkText = ''
             for i, chunk in enumerate(chunks):
                 if chunk.status == Chunk.HAS:
-                    text += ',' + str(i)
+                    chunkText += ',' + str(i)
+            if chunkText == '':
+                continue
+            if not first:
+                text += '#'
+            text += "%s;%d%s" % (self.encode(fileName), len(chunks), chunkText)
+        if text == '':
+            return self.NO_FILES
         return text
+
+    def encode(self, text):
+        return text.replace('\\', '\\\\').replace(';', '\\;').replace('#', '\\#')
+
+    def decode(self, text):
+        return text.replace('\\#', '#').replace('\\;', ';').replace('\\\\', '\\')
 
 class Storage:
     def __init__(self, port):
@@ -370,10 +386,10 @@ class Chunk:
     NEED = 'n'
     HAS = 'h'
     GETTING = 'g'
-    gettingFrom = '' # addr:port of the peer currently transferring this file to us
-    peers = sets.Set() # set of peers that have this chunk
 
     def __init__(self, status=NEED):
+        self.gettingFrom = '' # addr:port of the peer currently transferring this file to us
+        self.peers = sets.Set() # set of peers that have this chunk
         self.status = status
 
 
@@ -403,7 +419,7 @@ p2.join()
 
 time.sleep(.5)
 
-#p1.insert('noah.txt')
+p1.insert('noah.txt')
 
 time.sleep(1)
 
