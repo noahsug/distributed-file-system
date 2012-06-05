@@ -18,14 +18,16 @@ errPeerNotFound   =  5; # Cannot find some peer; warning, since others may be co
 CHUNK_SIZE = 65536
 
 class Connection(threading.Thread):
-    IDLE = 'i'
-    UPDATE = 'u'
-    CLOSE = 'c'
+    PASS = 'p' # let the other peer have a chance to ask for something
+    IDLE = 'i' # there's no more work to be done with the other peer
+    UPDATE = 'u' # ask what files and chunks the other peer owns
+    CLOSE = 'c' # close the other peer
 
     def __init__(self, peer):
         self.peer_ = peer
         threading.Thread.__init__(self)
         self.actions = [self.UPDATE]
+        self.active = True
 
     def addAction(self, action):
         self.actions.append(action)
@@ -36,7 +38,6 @@ class Connection(threading.Thread):
         return self.actions[0]
 
     def connect(self, addr, port):
-        self.active = False # false when the connection is closed
         self.addr = addr
         self.port = port
         self.id = "%s:%d" % (self.addr, self.port)
@@ -44,14 +45,13 @@ class Connection(threading.Thread):
         self.socket_ = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try :
             self.socket_.connect((addr, port))
-            self.active = True
         except:
             print 'DEBUG:', self.peer_.id, '- Cannot connect to peer', addr, port
+            self.active = False
             return errPeerNotFound
         return errOK
 
     def receive(self, conn):
-        self.active = True
         # we don't know the port or addr until the connection has been made
         self.addr = ''
         self.port = 0
@@ -77,8 +77,7 @@ class Connection(threading.Thread):
         if self.peer_.alreadyHasConnection(addr, port):
             print self.peer_.id, '- closing duplicate connection to', addr, port
             self.socket_.sendall(self.CLOSE)
-            self.socket_.close()
-            self.active = False
+            self.close()
         else:
             self.addr = addr
             self.port = port
@@ -96,20 +95,22 @@ class Connection(threading.Thread):
             self.peer_.files.update(self.id, data)
             self.socket_.sendall(self.peer_.files.serialize())
 
+        if request == self.PASS:
+            self.sendRequest()
+
         if request == self.IDLE:
             if (self.getAction() == self.IDLE):
-               time.sleep(.5) # reduce how much we spam the network with useless packets
+                print self.peer_.id, 'connect to', self.id, 'has no work to do - is sleeping'
+                time.sleep(1) # reduce how much we spam the network with useless packets
             self.sendRequest()
 
         if request == self.CLOSE:
-            self.socket_.close()
-            self.active = False
+            self.close()
 
     def sendRequest(self):
         action = self.getAction()
 
         if action == self.UPDATE:
-            print self.peer_.id, 'is telling', self.id, 'to update'
             msg = "%s%s" % (self.UPDATE, self.peer_.files.serialize())
             self.socket_.sendall(msg)
 
@@ -119,15 +120,18 @@ class Connection(threading.Thread):
             self.peer_.files.update(self.id, data)
 
             self.actions.pop(0)
-            self.socket_.sendall(self.IDLE)
+            self.socket_.sendall(self.PASS)
 
         if action == self.IDLE:
             self.socket_.sendall(self.IDLE)
 
         if self.getAction() == self.CLOSE:
             self.socket_.sendall(self.CLOSE)
-            self.socket_.close()
-            self.active = False
+            self.close()
+
+    def close(self):
+        self.socket_.close()
+        self.active = False
 
 
 class Peer():
@@ -247,8 +251,14 @@ class Peer():
 
     def syncer(self):
         while self.connected:
-#            print self.id, '- LRC:', self.files.getLeastReplicatedChunk()
+            for conn in self.peerConnections:
+                if not conn.active:
+                    self.files.removePeer(conn.id)
+                    self.peerConnections.remove(conn)
+                    print self.id, '-', conn.id, 'is not active'
+
             time.sleep(.2)
+#            print self.id, '- LRC:', self.files.getLeastReplicatedChunk()
 #            for chunks in self.files:
 #                for chunk in chunks:
 #
@@ -304,6 +314,16 @@ class FileStatus:
         for peerOwnedChunk in chunks:
             file[peerOwnedChunk].peers.add(peer)
         print 'added remote file from', peer, self.serialize()
+
+    def removePeer(self, peer):
+        for fileName in self.files:
+            chunks = self.files[fileName]
+            for chunk in chunks:
+                if peer in chunk.peers:
+                    chunk.peers.remove(peer)
+                    if chunk.status == Chunk.GETTING and chunk.gettingFrom == peer:
+                        chunk.status = Chunk.NEED
+
 
     def getLeastReplicatedChunk(self):
         bestFileName = ''
@@ -418,10 +438,9 @@ p1.join()
 p2.join()
 
 time.sleep(.5)
-
 p1.insert('noah.txt')
-
 time.sleep(1)
 
-p1.leave()
 p2.leave()
+time.sleep(2)
+p1.leave()
