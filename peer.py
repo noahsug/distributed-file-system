@@ -143,7 +143,7 @@ class Connection(threading.Thread):
         self.active = False
 
 
-class Peer():
+class Peer:
     def __init__(self, addr, port, peersFile='peers.txt'):
         self.connected = False # becomes true after join() is called
         self.addr = addr
@@ -268,7 +268,6 @@ class Peer():
                     print self.id, '-', conn.id, 'is not active'
                     continue
                 if conn.isBusy():
-                    print self.id, '-', conn.id, 'is busy', conn.actions
                     continue
                 chunkInfo = self.files.getChunkOwnedByPeer(conn.id)
                 if chunkInfo == FileStatus.NO_CHUNK_FOUND:
@@ -463,7 +462,7 @@ p2.join()
 
 time.sleep(.5)
 p1.insert('noah.txt')
-time.sleep(1)
+time.sleep(.6)
 #p1.insert('boobs.txt')
 #time.sleep(1)
 
