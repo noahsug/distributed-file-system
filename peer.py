@@ -300,21 +300,22 @@ class FileStatus:
 
     def addLocalFiles(self):
         # TODO get all files in the peer folder (storage.getLocalFiles) and add them (self.addLocalFile)
-        #=======================================================================
-        # dir = "/Share/peer" + str(self.port) + "/"
-        # subDirList = []
-        # if os.path.isdir(os.path.expanduser(dir)):
-        #    print "found dir"
-        #    for file in os.listdir(os.path.expanduser(dir)):
-        #        if os.path.isfile(file):
-        #            self.addLocalFile(file)
-        #        else:
-        #            subDirList.append(os.path.join(dir, file))
-        #    for subdir in subDirList
-        #        self.addLocalFiles()
-        #=======================================================================
-        pass
 
+        dir = "~/Share/peer" + str(self.port) + "/"
+        self.recursiveAddLocalFile(dir)
+        
+    def recursiveAddLocalFile(self, path):
+        subDirList = []  
+        if os.path.isdir(os.path.expanduser(path)):
+            for item in os.listdir(os.path.expanduser(path)):
+                if os.path.isfile(os.path.join(os.path.expanduser(path), item)):
+                    print item
+                    self.addLocalFile(item)
+                else:
+                    subDirList.append(os.path.join(os.path.expanduser(path), item))
+            
+            for subdir in subDirList:
+                self.recursiveAddLocalFile(subdir)
 
     def addLocalFile(self, fileName):
         self.storage_.writeFile(fileName)
