@@ -314,8 +314,7 @@ class FileStatus:
         #        self.addLocalFiles()
         #=======================================================================
         pass
-        
->>>>>>> addLocalFiles + init of Storage
+
 
     def addLocalFile(self, fileName):
         self.storage_.writeFile(fileName)
