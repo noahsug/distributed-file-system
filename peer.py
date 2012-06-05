@@ -210,7 +210,7 @@ class Peer():
         self.connected = False
 
         # stop the syncer thread
-        self.syncer.join()
+        self.syncerThread.join()
 
         # stop the listener thread
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -230,8 +230,8 @@ class Peer():
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.socket.bind((self.addr, self.port))
         self.socket.listen(3)
-        self.listener = threading.Thread(target=self.listener)
-        self.listener.start()
+        self.listenerThread = threading.Thread(target=self.listener)
+        self.listenerThread.start()
 
     def listener(self):
         while self.connected:
@@ -246,8 +246,8 @@ class Peer():
         conn.close()
 
     def startSync(self):
-        self.syncer = threading.Thread(target=self.syncer)
-        self.syncer.start()
+        self.syncerThread = threading.Thread(target=self.syncer)
+        self.syncerThread.start()
 
     def syncer(self):
         while self.connected:
@@ -436,11 +436,18 @@ p1 = Peer('127.0.0.1', 10001)
 p2 = Peer('127.0.0.1', 10002)
 p1.join()
 p2.join()
-
 time.sleep(.5)
-p1.insert('noah.txt')
-time.sleep(1)
+
+#p1.insert('noah.txt')
+#time.sleep(1)
 
 p2.leave()
-time.sleep(2)
 p1.leave()
+time.sleep(.5)
+
+p1.join()
+time.sleep(.5)
+
+p1.leave()
+
+
