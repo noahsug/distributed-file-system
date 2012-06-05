@@ -176,7 +176,7 @@ class Peer:
         if len(self.peers_) == 0:
             return errNoPeersFound
 
-        self.files.addLocalFiles() # add all files that already exist locally in the peer folder
+        self.files.addLocalFiles()
 
         self.connected = True
         self.listen()
@@ -297,7 +297,7 @@ class FileStatus:
         self.lock_ = threading.Lock() # prob will need to use this somewhere
 
     def addLocalFiles(self):
-        # TODO get all files in the file system (storage.getLocalFiles) and add them (self.addLocalFile)
+        # TODO get all files in the peer folder (storage.getLocalFiles) and add them (self.addLocalFile)
         pass
 
     def addLocalFile(self, fileName):
