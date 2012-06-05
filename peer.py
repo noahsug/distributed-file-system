@@ -152,6 +152,7 @@ class Peer:
         self.id = "%s:%d" % (self.addr, self.port)
         self.storage = Storage(port) # Interface to write/read to/from the disk
         self.files = FileStatus(self.storage) # keeps track of what file chunks we have/need
+        self.files.addLocalFiles()
         self.peerConnections = [] # the list of sockets for each peer
         self.peers_ = [] # the list of peers to connect to when join is called
         self.parsePeersFile(peersFile)
@@ -176,8 +177,6 @@ class Peer:
             return errOK # already connected, no need to join
         if len(self.peers_) == 0:
             return errNoPeersFound
-
-        self.files.addLocalFiles()
 
         self.connected = True
         self.listen()
