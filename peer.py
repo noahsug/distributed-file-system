@@ -151,7 +151,7 @@ class Peer:
         self.port = port
         self.id = "%s:%d" % (self.addr, self.port)
         self.storage = Storage(port) # Interface to write/read to/from the disk
-        self.files = FileStatus(self.storage, port) # keeps track of what file chunks we have/need
+        self.files = FileStatus(self.storage) # keeps track of what file chunks we have/need
         self.peerConnections = [] # the list of sockets for each peer
         self.peers_ = [] # the list of peers to connect to when join is called
         self.parsePeersFile(peersFile)
@@ -292,30 +292,15 @@ class FileStatus:
     NO_CHUNK_FOUND = 0
     NO_FILES = 'n'
 
-    def __init__(self, storage, port):
+    def __init__(self, storage):
         self.files = {} # mapping of file name to array of chunks
         self.storage_ = storage
-        self.port = port
         self.lock_ = threading.Lock() # prob will need to use this somewhere
 
     def addLocalFiles(self):
-        # TODO get all files in the peer folder (storage.getLocalFiles) and add them (self.addLocalFile)
-
-        dir = "~/Share/peer" + str(self.port) + "/"
-        self.recursiveAddLocalFile(dir)
         
-    def recursiveAddLocalFile(self, path):
-        subDirList = []  
-        if os.path.isdir(os.path.expanduser(path)):
-            for item in os.listdir(os.path.expanduser(path)):
-                if os.path.isfile(os.path.join(os.path.expanduser(path), item)):
-                    print item
-                    self.addLocalFile(item)
-                else:
-                    subDirList.append(os.path.join(os.path.expanduser(path), item))
-            
-            for subdir in subDirList:
-                self.recursiveAddLocalFile(subdir)
+        for file in storage.getLocalFiles():
+            self.addLocalFile(file)
 
     def addLocalFile(self, fileName):
         self.storage_.writeFile(fileName)
@@ -414,9 +399,11 @@ class FileStatus:
         return text
 
 class Storage:
+    
     def __init__(self, port):
         # Create directory ~/Share/peer<port> on local
         dirName = "peer" + str(port)
+        self.fileList_ = []
         if not os.path.isdir(os.path.expanduser("~/Share/")):
             os.mkdir(os.path.expanduser("~/Share/"))
             
@@ -439,6 +426,28 @@ class Storage:
     def getNumChunks(self, fileName):
         return len(fileName)
 
+    def getLocalFiles(self):
+        
+        dir = "~/Share/peer" + str(self.port) + "/"
+        self.recursiveAddLocalFile(dir)
+        return self.fileList_
+        
+    def recursiveAddLocalFile(self, path):
+        subDirList = []  
+        if os.path.isdir(os.path.expanduser(path)):
+            for item in os.listdir(os.path.expanduser(path)):
+                if os.path.isfile(os.path.join(os.path.expanduser(path), item)):
+                    #print item
+                    self.fileList_.append(os.path.join(os.path.expanduser(path), item))
+                else:
+                    subDirList.append(os.path.join(os.path.expanduser(path), item))
+            
+            for subdir in subDirList:
+                self.recursiveAddLocalFile(subdir)
+
+    
+    def writeChunk(self, fileName, chunkNum, data):
+        pass
 
 class Chunk:
     NEED = 'n'
