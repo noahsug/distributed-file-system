@@ -298,7 +298,6 @@ class FileStatus:
         self.lock_ = threading.Lock() # prob will need to use this somewhere
 
     def addLocalFiles(self):
-        
         for file in storage.getLocalFiles():
             self.addLocalFile(file)
 
@@ -399,17 +398,15 @@ class FileStatus:
         return text
 
 class Storage:
-    
     def __init__(self, port):
         # Create directory ~/Share/peer<port> on local
         dirName = "peer" + str(port)
         self.fileList_ = []
         if not os.path.isdir(os.path.expanduser("~/Share/")):
             os.mkdir(os.path.expanduser("~/Share/"))
-            
+
         if not os.path.isdir(os.path.expanduser("~/Share/" + dirName + "/")):
             os.mkdir(os.path.expanduser("~/Share/" + dirName + "/"))
-
 
     def writeFile(self, fileName):
         # TODO write file locally
@@ -423,17 +420,19 @@ class Storage:
     def getChunk(self, fileName, chunk):
         return fileName[chunk]
 
+    def writeChunk(self, fileName, chunkNum, data):
+        pass
+
     def getNumChunks(self, fileName):
         return len(fileName)
 
     def getLocalFiles(self):
-        
         dir = "~/Share/peer" + str(self.port) + "/"
         self.recursiveAddLocalFile(dir)
         return self.fileList_
-        
+
     def recursiveAddLocalFile(self, path):
-        subDirList = []  
+        subDirList = []
         if os.path.isdir(os.path.expanduser(path)):
             for item in os.listdir(os.path.expanduser(path)):
                 if os.path.isfile(os.path.join(os.path.expanduser(path), item)):
@@ -441,13 +440,9 @@ class Storage:
                     self.fileList_.append(os.path.join(os.path.expanduser(path), item))
                 else:
                     subDirList.append(os.path.join(os.path.expanduser(path), item))
-            
+
             for subdir in subDirList:
                 self.recursiveAddLocalFile(subdir)
-
-    
-    def writeChunk(self, fileName, chunkNum, data):
-        pass
 
 class Chunk:
     NEED = 'n'
