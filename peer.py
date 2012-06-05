@@ -7,6 +7,7 @@ import socket
 import sys
 import threading
 import time
+import os.path
 
 errOK             =  0; # Everything good
 errUnknownWarning =  1; # Unknown warning
@@ -150,7 +151,7 @@ class Peer:
         self.port = port
         self.id = "%s:%d" % (self.addr, self.port)
         self.storage = Storage(port) # Interface to write/read to/from the disk
-        self.files = FileStatus(self.storage) # keeps track of what file chunks we have/need
+        self.files = FileStatus(self.storage, port) # keeps track of what file chunks we have/need
         self.peerConnections = [] # the list of sockets for each peer
         self.peers_ = [] # the list of peers to connect to when join is called
         self.parsePeersFile(peersFile)
@@ -291,14 +292,30 @@ class FileStatus:
     NO_CHUNK_FOUND = 0
     NO_FILES = 'n'
 
-    def __init__(self, storage):
+    def __init__(self, storage, port):
         self.files = {} # mapping of file name to array of chunks
         self.storage_ = storage
+        self.port = port
         self.lock_ = threading.Lock() # prob will need to use this somewhere
 
     def addLocalFiles(self):
         # TODO get all files in the peer folder (storage.getLocalFiles) and add them (self.addLocalFile)
+        #=======================================================================
+        # dir = "/Share/peer" + str(self.port) + "/"
+        # subDirList = []
+        # if os.path.isdir(os.path.expanduser(dir)):
+        #    print "found dir"
+        #    for file in os.listdir(os.path.expanduser(dir)):
+        #        if os.path.isfile(file):
+        #            self.addLocalFile(file)
+        #        else:
+        #            subDirList.append(os.path.join(dir, file))
+        #    for subdir in subDirList
+        #        self.addLocalFiles()
+        #=======================================================================
         pass
+        
+>>>>>>> addLocalFiles + init of Storage
 
     def addLocalFile(self, fileName):
         self.storage_.writeFile(fileName)
@@ -398,8 +415,14 @@ class FileStatus:
 
 class Storage:
     def __init__(self, port):
-        # TODO create a folder called peer<port number>
-        pass
+        # Create directory ~/Share/peer<port> on local
+        dirName = "peer" + str(port)
+        if not os.path.isdir(os.path.expanduser("~/Share/")):
+            os.mkdir(os.path.expanduser("~/Share/"))
+            
+        if not os.path.isdir(os.path.expanduser("~/Share/" + dirName + "/")):
+            os.mkdir(os.path.expanduser("~/Share/" + dirName + "/"))
+
 
     def writeFile(self, fileName):
         # TODO write file locally
