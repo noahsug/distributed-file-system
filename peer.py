@@ -22,6 +22,7 @@ class Connection(threading.Thread):
     IDLE = 'i' # there's no more work to be done with the other peer
     UPDATE = 'u' # ask what files and chunks the other peer owns
     CLOSE = 'c' # close the other peer
+    FILE = 'f' # send over a file chunk
 
     def __init__(self, peer):
         self.peer_ = peer
@@ -36,6 +37,10 @@ class Connection(threading.Thread):
         if len(self.actions) == 0:
             return self.IDLE
         return self.actions[0]
+
+    # Used to determine if the connection should be asked to do work
+    def isBusy(self):
+        return self.getAction()[0] == self.FILE
 
     def connect(self, addr, port):
         self.addr = addr
@@ -101,7 +106,7 @@ class Connection(threading.Thread):
         if request == self.IDLE:
             if (self.getAction() == self.IDLE):
                 print self.peer_.id, 'connect to', self.id, 'has no work to do - is sleeping'
-                time.sleep(1) # reduce how much we spam the network with useless packets
+                time.sleep(.5) # reduce how much we spam the network with useless packets
             self.sendRequest()
 
         if request == self.CLOSE:
@@ -109,6 +114,10 @@ class Connection(threading.Thread):
 
     def sendRequest(self):
         action = self.getAction()
+
+        if action[0] == self.FILE:
+            print self.id, 'is getting file', action
+            self.socket_.sendall(self.PASS)
 
         if action == self.UPDATE:
             msg = "%s%s" % (self.UPDATE, self.peer_.files.serialize())
@@ -251,32 +260,26 @@ class Peer():
 
     def syncer(self):
         while self.connected:
+            # remove disconnected peers
             for conn in self.peerConnections:
                 if not conn.active:
                     self.files.removePeer(conn.id)
                     self.peerConnections.remove(conn)
                     print self.id, '-', conn.id, 'is not active'
+                    continue
+                if conn.isBusy():
+                    print self.id, '-', conn.id, 'is busy', conn.actions
+                    continue
+                chunkInfo = self.files.getChunkOwnedByPeer(conn.id)
+                if chunkInfo == FileStatus.NO_CHUNK_FOUND:
+                    continue
+                fileName, chunk = chunkInfo
+                self.files.markChunkAsBeingRetreived(fileName, chunk, conn.id)
+                action = '%s%s;%d' % (Connection.FILE, encode(fileName), chunk)
+                print self.id, '-', conn.id, 'is about to get action', action
+                conn.addAction(action)
 
-            time.sleep(.2)
-#            print self.id, '- LRC:', self.files.getLeastReplicatedChunk()
-#            for chunks in self.files:
-#                for chunk in chunks:
-#
-#
-#            # wait for all connections to be idle
-#            allPeersIdle = False
-#            while not allPeersIdle:
-#                allPeersIdle = True
-#                for conn in self.peerConnections:
-#                    if conn.action != Connection.IDLE:
-#                        allPeersIdle = False
-#                        time.sleep(.1)
-#                        break
-#
-#            # pull the file status from each peer
-#            for conn in self.peerConnections:
-#                pass
-#
+            time.sleep(.1)
 
     def alreadyHasConnection(self, addr, port):
         for conn in self.peerConnections:
@@ -286,7 +289,7 @@ class Peer():
 
 
 class FileStatus:
-    HAVE_ALL_FILES = 0
+    NO_CHUNK_FOUND = 0
     NO_FILES = 'n'
 
     def __init__(self, storage):
@@ -315,6 +318,15 @@ class FileStatus:
             file[peerOwnedChunk].peers.add(peer)
         print 'added remote file from', peer, self.serialize()
 
+    def markChunkAsBeingRetreived(self, fileName, chunk, peer):
+        chunk = self.files[fileName][chunk]
+        chunk.status = Chunk.GETTING
+        chunk.gettingFrom = peer
+
+    def markChunkAsRetreived(self, fileName, chunk):
+        chunk = self.files[fileName][chunk]
+        chunk.status = Chunk.HAS
+
     def removePeer(self, peer):
         for fileName in self.files:
             chunks = self.files[fileName]
@@ -324,7 +336,15 @@ class FileStatus:
                     if chunk.status == Chunk.GETTING and chunk.gettingFrom == peer:
                         chunk.status = Chunk.NEED
 
+    def getChunkOwnedByPeer(self, peer):
+        for fileName in self.files:
+            chunks = self.files[fileName]
+            for i, chunk in enumerate(chunks):
+                if chunk.status == Chunk.NEED and peer in chunk.peers:
+                    return (fileName, i)
+        return self.NO_CHUNK_FOUND
 
+    # not used atm
     def getLeastReplicatedChunk(self):
         bestFileName = ''
         bestChunk = -1
@@ -341,7 +361,7 @@ class FileStatus:
                         if replication == 1:
                             return (bestFileName, bestChunk)
         if bestFileName == '':
-            return self.HAVE_ALL_FILES
+            return self.NO_CHUNK_FOUND
         return (bestFileName, bestChunk)
 
     def update(self, peer, data):
@@ -351,7 +371,7 @@ class FileStatus:
         for file in files:
             fileName, chunkInfo = re.split('(?<!\\\);', file)
             chunkInfo = chunkInfo.split(',')
-            fileName = self.decode(fileName)
+            fileName = decode(fileName)
             chunks = [int(i) for i in chunkInfo[1:]]
             maxChunks = int(chunkInfo[0])
             self.addRemoteFile(peer, fileName, maxChunks, chunks)
@@ -370,16 +390,12 @@ class FileStatus:
                 continue
             if not first:
                 text += '#'
-            text += "%s;%d%s" % (self.encode(fileName), len(chunks), chunkText)
+            else:
+                first = False
+            text += "%s;%d%s" % (encode(fileName), len(chunks), chunkText)
         if text == '':
             return self.NO_FILES
         return text
-
-    def encode(self, text):
-        return text.replace('\\', '\\\\').replace(';', '\\;').replace('#', '\\#')
-
-    def decode(self, text):
-        return text.replace('\\#', '#').replace('\\;', ';').replace('\\\\', '\\')
 
 class Storage:
     def __init__(self, port):
@@ -430,24 +446,27 @@ class Status:
         return -1
 
 
-PEERS_FILE = '127.0.0.1 10001\n127.0.0.1 10002'
+def encode(text):
+    return text.replace('\\', '\\\\').replace(';', '\\;').replace('#', '\\#')
+
+def decode(text):
+    return text.replace('\\#', '#').replace('\\;', ';').replace('\\\\', '\\')
+
+PEERS_FILE = '127.0.0.1 10001\n127.0.0.1 10002\n127.0.0.1 10003'
 
 p1 = Peer('127.0.0.1', 10001)
 p2 = Peer('127.0.0.1', 10002)
+p3 = Peer('127.0.0.1', 10003)
 p1.join()
 p2.join()
-time.sleep(.5)
+#p3.join()
 
-#p1.insert('noah.txt')
+time.sleep(.5)
+p1.insert('noah.txt')
+time.sleep(1)
+#p1.insert('boobs.txt')
 #time.sleep(1)
 
+p1.leave()
 p2.leave()
-p1.leave()
-time.sleep(.5)
-
-p1.join()
-time.sleep(.5)
-
-p1.leave()
-
-
+#p3.leave()
