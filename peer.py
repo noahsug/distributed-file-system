@@ -8,6 +8,7 @@ import sys
 import threading
 import time
 import os.path
+import mmap
 
 errOK             =  0; # Everything good
 errUnknownWarning =  1; # Unknown warning
@@ -304,7 +305,7 @@ class FileStatus:
         self.storage_.writeFile(fileName)
         numChunks = self.storage_.getNumChunks(fileName)
         chunks = [Chunk(Chunk.HAS) for i in range(0, numChunks)]
-        self.files[fileName] = chunks
+        self.files[self.storage_.getName(fileName)] = chunks
         print 'added local file', self.serialize()
 
     def addRemoteFile(self, peer, fileName, maxChunks, chunks):
@@ -406,20 +407,30 @@ class Storage:
         if not os.path.isdir(os.path.expanduser("~/Share/" + dirName + "/")):
             os.mkdir(os.path.expanduser("~/Share/" + dirName + "/"))
 
+    def getName(self, filePath):
+        return os.path.basename(filePath)
+
     def writeFile(self, fileName):
-        # TODO write file locally
-        pass
-
-    # TODO hardcoded for now
+        dir = "~/Share/peer" + str(self.port) + "/"
+        if not os.path.isfile(os.path.join(os.path.expanduser(dir), os.path.basename(fileName))):
+            w = open(os.path.expanduser(dir) + os.path.basename(fileName), "r+")
+            w.write(self.readFile(fileName))
+            
     def readFile(self, fileName):
-        return PEERS_FILE
+        f = open(os.path.expanduser(fileName), "r")
+        return f.read()
 
-    # TODO for now I'm just saying each character of the file name is a chunk in the file :)
     def getChunk(self, fileName, chunk):
-        return fileName[chunk]
-
+        f = open(os.path.expanduser(fileName), "r")
+        map = mmap.mmap(f.fileno(), 0)
+        return map[(chunk * CHUNK_SIZE):((chunk + 1) * CHUNK_SIZE)]
+    
     def writeChunk(self, fileName, chunkNum, data):
-        pass
+        #Assume data is no longer than size CHUNK_SIZE
+        f = open(os.path.expanduser(fileName), "r+")
+        map = mmap.mmap(f.fileno(), 0)
+        map.seek(chunkNum * CHUNK_SIZE)
+        map.write(data)
 
     def getNumChunks(self, fileName):
         size = os.path.getsize(os.path.expanduser(fileName))
@@ -427,22 +438,12 @@ class Storage:
 
     def getLocalFiles(self):
         fileList = []
-        dir = "~/Share/peer" + str(self.port) + "/"
-        self.recursiveAddLocalFile(dir, fileList)
-        return fileList
-
-    def recursiveAddLocalFile(self, path, list):
-        subDirList = []
+        path = "~/Share/peer" + str(self.port) + "/"
         if os.path.isdir(os.path.expanduser(path)):
             for item in os.listdir(os.path.expanduser(path)):
                 if os.path.isfile(os.path.join(os.path.expanduser(path), item)):
-                    #print item
-                    list.append(os.path.join(os.path.expanduser(path), item))
-                else:
-                    subDirList.append(os.path.join(os.path.expanduser(path), item))
-
-            for subdir in subDirList:
-                self.recursiveAddLocalFile(subdir, list)
+                    fileList.append(os.path.join(os.path.expanduser(path), item))
+        return fileList
 
 class Chunk:
     NEED = 'n'
@@ -482,13 +483,13 @@ PEERS_FILE = '127.0.0.1 10001\n127.0.0.1 10002\n127.0.0.1 10003'
 
 p1 = Peer('127.0.0.1', 10001)
 p2 = Peer('127.0.0.1', 10002)
-p3 = Peer('127.0.0.1', 10003)
+#p3 = Peer('127.0.0.1', 10003)
 p1.join()
 p2.join()
 #p3.join()
 
 time.sleep(.5)
-p1.insert('noah.txt')
+p1.insert('~/noah.txt')
 time.sleep(.6)
 #p1.insert('boobs.txt')
 #time.sleep(1)
