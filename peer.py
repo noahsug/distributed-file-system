@@ -376,8 +376,9 @@ class FileStatus:
         for file in self.storage_.getLocalFiles():
             self.addLocalFile(file)
 
-    def addLocalFile(self, fileName):
-        self.storage_.writeFile(fileName)
+    def addLocalFile(self, filePath):
+        self.storage_.writeFile(filePath)
+        fileName = os.path.basename(filePath)
         numChunks = self.storage_.getNumChunks(fileName)
         chunks = [Chunk(Chunk.HAS) for i in range(0, numChunks)]
         self.acquire()
@@ -492,49 +493,89 @@ class FileStatus:
 class Storage:
     def __init__(self, port):
         self.port = port
+        self.lock_ = threading.Lock()
         dirName = "peer" + str(self.port)
         if not os.path.isdir(os.path.expanduser("~/Share/")):
             os.mkdir(os.path.expanduser("~/Share/"))
 
-        if not os.path.isdir(os.path.expanduser("~/Share/" + dirName + "/")):
-            os.mkdir(os.path.expanduser("~/Share/" + dirName + "/"))
+        if not os.path.isdir(self.getPath()):
+            os.mkdir(self.getPath())
+
+    def acquire(self):
+        self.lock_.acquire()
+
+    def release(self):
+        self.lock_.release()
+
+    def getPath(self):
+        dirName = "peer" + str(self.port)
+        return os.path.expanduser("~/Share/" + dirName + "/")
 
     def getName(self, filePath):
         return os.path.basename(filePath)
 
-    def writeFile(self, fileName):
-        dir = "~/Share/peer" + str(self.port) + "/"
-        if not os.path.isfile(os.path.join(os.path.expanduser(dir), os.path.basename(fileName))):
-            w = open(os.path.expanduser(dir) + os.path.basename(fileName), "r+")
-            w.write(self.readFile(fileName))
+    def writeFile(self, filePath):
+        self.acquire()
+        newPath = os.path.join(self.getPath(), os.path.basename(filePath))
+        if not os.path.isfile(newPath):
+            w = open(newPath, "w")
+            w.write(self.readFileNoLock(filePath))
+            w.close()
+        self.release()
 
     def readFile(self, fileName):
+        self.acquire()
+        text = self.readFileNoLock(fileName)
+        self.release()
+        return text
+
+    def readFileNoLock(self, fileName):
         f = open(os.path.expanduser(fileName), "r")
-        return f.read()
+        text = f.read()
+        f.close()
+        return text
 
     def getChunk(self, fileName, chunk):
-        f = open(os.path.expanduser(fileName), "r")
+        self.acquire()
+        filePath = os.path.join(self.getPath(), fileName)
+        f = open(filePath, "r")
         map = mmap.mmap(f.fileno(), 0)
-        return map[(chunk * CHUNK_SIZE):((chunk + 1) * CHUNK_SIZE)]
+        data = map[(chunk * CHUNK_SIZE):((chunk + 1) * CHUNK_SIZE)]
+        map.close()
+        f.close()
+        self.release()
+        return data
+
 
     def writeChunk(self, fileName, chunkNum, data):
         #Assume data is no longer than size CHUNK_SIZE
-        f = open(os.path.expanduser(fileName), "r+")
+        self.acquire()
+        filePath = os.path.join(self.getPath(), fileName)
+        f = open(filePath, "r+")
         map = mmap.mmap(f.fileno(), 0)
         map.seek(chunkNum * CHUNK_SIZE)
         map.write(data)
+        map.close()
+        f.close()
+        self.release()
 
     def getNumChunks(self, fileName):
-        size = os.path.getsize(os.path.expanduser(fileName))
+        self.acquire()
+        filePath = os.path.join(self.getPath(), fileName)
+        size = os.path.getsize(filePath)
+        self.release()
         return int(size / CHUNK_SIZE) + 1
 
     def getLocalFiles(self):
+        self.acquire()
         fileList = []
-        path = "~/Share/peer" + str(self.port) + "/"
-        if os.path.isdir(os.path.expanduser(path)):
-            for item in os.listdir(os.path.expanduser(path)):
-                if os.path.isfile(os.path.join(os.path.expanduser(path), item)):
-                    fileList.append(os.path.join(os.path.expanduser(path), item))
+        path = self.getPath()
+        if os.path.isdir(path):
+            for localFile in os.listdir(path):
+                localFilePath = os.path.join(path, localFile)
+                if os.path.isfile(localFilePath):
+                    fileList.append(localFilePath)
+        self.release()
         return fileList
 
 class Chunk:
