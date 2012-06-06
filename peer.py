@@ -17,43 +17,64 @@ errCannotConnect  = -3; # Cannot connect to anything; fatal error
 errNoPeersFound   = -4; # Cannot find any peer (e.g., no peers in a peer file); fatal
 errPeerNotFound   =  5; # Cannot find some peer; warning, since others may be connectable
 
-CHUNK_SIZE = 65536
+CHUNK_SIZE = 16384
 
 class Connection(threading.Thread):
-    PASS = 'p' # let the other peer have a chance to ask for something
+    PASS = 'p' # let the other peer have a chance to ask for something and update it on our file status
     IDLE = 'i' # there's no more work to be done with the other peer
-    UPDATE = 'u' # ask what files and chunks the other peer owns
     CLOSE = 'c' # close the other peer
     FILE = 'f' # send over a file chunk
 
     def __init__(self, peer):
+        self.lock_ = threading.Lock()
         self.peer_ = peer
         threading.Thread.__init__(self)
-        self.actions = [self.UPDATE]
-        self.active = True
+        self.futureActions = [self.PASS]
+        self.active = True # True connection hasn't been closed
+        self.initialized = False # True when addr and port are defined
+        self.idleSleepTime = .025
+
+    def acquire(self):
+        self.lock_.acquire()
+
+    def release(self):
+        self.lock_.release()
+
+    def sleep(self):
+        time.sleep(self.idleSleepTime)
+        if self.idleSleepTime < .5:
+            self.idleSleepTime += .025
 
     def addAction(self, action):
-        self.actions.append(action)
+        self.futureActions.append(action)
 
     def getAction(self):
-        if len(self.actions) == 0:
-            return self.IDLE
-        return self.actions[0]
+        action = 0
+        self.acquire()
+        if len(self.futureActions) == 0:
+            action = self.findWork()
+        else:
+            action = self.futureActions[0]
+        self.release()
+        return action
 
-    # Used to determine if the connection should be asked to do work
-    def isBusy(self):
-        return self.getAction()[0] == self.FILE
+    def nextAction(self):
+        self.acquire()
+        if len(self.futureActions) > 0:
+            self.futureActions.pop(0)
+        self.release()
 
     def connect(self, addr, port):
         self.addr = addr
         self.port = port
         self.id = "%s:%d" % (self.addr, self.port)
+        self.initialized = True
         self.isReceiver_ = False
         self.socket_ = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try :
+        try:
             self.socket_.connect((addr, port))
         except:
-            print 'DEBUG:', self.peer_.id, '- Cannot connect to peer', addr, port
+            #print 'DEBUG:', self.peer_.id, '- Cannot connect to peer', addr, port
             self.active = False
             return errPeerNotFound
         return errOK
@@ -70,79 +91,131 @@ class Connection(threading.Thread):
         if self.isReceiver_:
             self.initRecveiver()
         else: # we are the connector - send addr and port to start the connection
-            self.socket_.sendall(self.peer_.id)
-
+            self.sendData(self.peer_.id)
         while self.active:
             self.takeRequest()
 
     def initRecveiver(self):
-        data = self.socket_.recv(CHUNK_SIZE)
-        data = repr(data)
-        addr, port = data[1:-1].split(':')
+        data = self.readData()
+        if not data:
+            #print 'DEBUG', '- failed to initReceiver'
+            self.close()
+            return errCannotConnect
+        addr, port = data.split(':')
         port = int(port)
 
         if self.peer_.alreadyHasConnection(addr, port):
-            print self.peer_.id, '- closing duplicate connection to', addr, port
-            self.socket_.sendall(self.CLOSE)
+            #print self.peer_.id, '- closing duplicate connection to', addr, port
+            self.sendData(self.CLOSE)
             self.close()
         else:
             self.addr = addr
             self.port = port
             self.id = "%s:%d" % (self.addr, self.port)
-            self.sendRequest()
+            self.initialized = True
+            self.makeRequest()
 
     def takeRequest(self):
-        data = self.socket_.recv(CHUNK_SIZE)
-        data = repr(data)[1:-1]
+        data = self.readData()
+        if not data:
+            #print 'DEBUG', '- failed to take request'
+            self.close()
+            return errCannotConnect
         request = data[0] # the first character is the request
         data = data[1:] # the rest is the data
-        print self.peer_.id, '- received', request, data, 'from', self.id
+        #print self.peer_.id, '- received', request, data, 'from', self.id
 
-        if request == self.UPDATE:
-            self.peer_.files.update(self.id, data)
-            self.socket_.sendall(self.peer_.files.serialize())
+        if request == self.FILE:
+            fileName, chunkNum = self.deserializeFileRequest(data)
+            chunkData = self.peer_.storage.getChunk(fileName, chunkNum)
+            self.sendData(chunkData)
 
         if request == self.PASS:
-            self.sendRequest()
+            self.peer_.files.update(self.id, data)
+            self.makeRequest()
 
         if request == self.IDLE:
-            if (self.getAction() == self.IDLE):
-                print self.peer_.id, 'connect to', self.id, 'has no work to do - is sleeping'
-                time.sleep(.5) # reduce how much we spam the network with useless packets
-            self.sendRequest()
+            self.peer_.files.update(self.id, data)
+            currentAction = self.getAction()
+            if (currentAction == self.IDLE):
+                #print self.peer_.id, 'connected to', self.id, 'has no work to do - is sleeping'
+                self.sleep() # reduce how much we spam the network with useless packets
+                self.addAction(self.PASS)
+                self.makeRequest()
+            else:
+                self.makeRequest(currentAction)
 
         if request == self.CLOSE:
             self.close()
 
-    def sendRequest(self):
-        action = self.getAction()
+    def makeRequest(self, action='none'):
+        if action == 'none':
+            action = self.getAction()
+        self.nextAction()
 
         if action[0] == self.FILE:
-            print self.id, 'is getting file', action
-            self.socket_.sendall(self.PASS)
+            self.sendData(action)
+            fileName, chunkNum = self.deserializeFileRequest(action[1:])
+            chunkData = self.readData()
+            if not chunkData:
+                #print 'DEBUG', '- failed to read file data'
+                self.close()
+                return errCannotConnect
+            self.peer_.storage.writeChunk(fileName, chunkNum, chunkData)
+            self.peer_.files.markChunkAsRetreived(fileName, chunkNum)
+            action = self.PASS
 
-        if action == self.UPDATE:
-            msg = "%s%s" % (self.UPDATE, self.peer_.files.serialize())
-            self.socket_.sendall(msg)
-
-            data = self.socket_.recv(CHUNK_SIZE)
-            data = repr(data)[1:-1]
-            print self.peer_.id, '- received update data', data, 'from', self.id
-            self.peer_.files.update(self.id, data)
-
-            self.actions.pop(0)
-            self.socket_.sendall(self.PASS)
+        if action == self.PASS:
+            msg = "%s%s" % (self.PASS, self.peer_.files.serialize())
+            self.sendData(msg)
 
         if action == self.IDLE:
-            self.socket_.sendall(self.IDLE)
+            msg = "%s%s" % (self.IDLE, self.peer_.files.serialize())
+            self.sendData(msg)
 
-        if self.getAction() == self.CLOSE:
-            self.socket_.sendall(self.CLOSE)
+        if action == self.CLOSE:
+            self.sendData(self.CLOSE)
             self.close()
 
+    def findWork(self):
+        chunkInfo = self.peer_.files.getChunkOwnedByPeer(self.id)
+        if chunkInfo == FileStatus.NO_CHUNK_FOUND:
+            return self.IDLE
+        fileName, chunk = chunkInfo
+        return '%s%s;%d' % (Connection.FILE, encode(fileName), chunk)
+
+    def readData(self):
+        data = ''
+        try:
+            data = self.socket_.recv(CHUNK_SIZE)
+        except:
+            #print 'DEBUG', '- socket failed to recv'
+            pass
+
+        if data:
+            #print self.peer_.id, '- READING DATA', data
+            return repr(data)[1:-1]
+        return ''
+
+    def sendData(self, msg):
+        try:
+            #print self.peer_.id, '- SENDING DATA', msg
+            self.socket_.sendall(msg)
+        except:
+            #print 'DEBUG:', '- failed to send data', msg
+            self.close()
+
+    def deserializeFileRequest(self, text):
+        fileName, chunkNum = re.split('(?<!\\\);', text)
+        fileName = decode(fileName)
+        chunkNum = int(chunkNum)
+        return (fileName, chunkNum)
+
     def close(self):
-        self.socket_.close()
         self.active = False
+        if self.initialized:
+            self.peer_.files.removePeer(self.id)
+        self.socket_.close()
 
 
 class Peer:
@@ -170,7 +243,8 @@ class Peer:
                 port = int(port)
                 self.peers_.append((addr, port))
         except:
-            print 'DEBUG:', self.id, '- Error parsing peers file'
+            #print 'DEBUG:', self.id, '- Error parsing peers file'
+            pass
 
     # API method
     def join(self):
@@ -180,8 +254,10 @@ class Peer:
             return errNoPeersFound
 
         self.connected = True
-        self.listen()
-        self.startSync()
+        status = self.listen()
+        if status < 0:
+            self.connected = False
+            return status
 
         connectedPeers = 0
         failedToConnect = False
@@ -207,79 +283,72 @@ class Peer:
     # API method
     def insert(self, fileName):
         self.files.addLocalFile(fileName)
-        for conn in self.peerConnections:
-            conn.addAction(Connection.UPDATE)
         return errOK
 
     # API method
     def query(self, status):
+        fileNames = self.files.files.keys()
+        fileNames.sort()
+        status.files = [self.files.files[fileName] for fileName in fileNames]
         return errOK
 
     # API method
     def leave(self):
+        if not self.connected:
+            return errOK
         self.connected = False
-
-        # stop the syncer thread
-        self.syncerThread.join()
 
         # stop the listener thread
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((self.addr, self.port)) # connect to self to close to listener thread
         s.close()
+        self.listenerThread.join()
 
         # close all connections to peers
         for conn in self.peerConnections:
             conn.addAction(Connection.CLOSE)
-        for conn in self.peerConnections:
-            conn.join()
+#        for conn in self.peerConnections:
+#            conn.join()
+#        self.peerConnections = []
 
         return errOK
 
     def listen(self):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.socket.bind((self.addr, self.port))
+
+        connectionAttempts = 5
+        for i in range(connectionAttempts + 1):
+            try:
+                self.socket.bind((self.addr, self.port))
+                break
+            except:
+                #print 'DEBUG:', self.id, '- failed to bind socket to', self.addr, self.port
+                if i == connectionAttempts:
+                    return errCannotConnect
+                time.sleep(.1)
+
         self.socket.listen(3)
         self.listenerThread = threading.Thread(target=self.listener)
         self.listenerThread.start()
+        return errOK
 
     def listener(self):
         while self.connected:
-            conn, fullAddr = self.socket.accept()
+            try:
+                conn, fullAddr = self.socket.accept()
+            except:
+                #print 'DEBUG:', 'failed to accept()'
+                time.sleep(.1)
+                continue
             if not self.connected:
                 break
             connection = Connection(self)
             connection.receive(conn)
             connection.start()
             self.peerConnections.append(connection)
-        print self.id, '- closing listener thread'
+        #print self.id, '- closing listener thread'
         conn.close()
-
-    def startSync(self):
-        self.syncerThread = threading.Thread(target=self.syncer)
-        self.syncerThread.start()
-
-    def syncer(self):
-        while self.connected:
-            # remove disconnected peers
-            for conn in self.peerConnections:
-                if not conn.active:
-                    self.files.removePeer(conn.id)
-                    self.peerConnections.remove(conn)
-                    print self.id, '-', conn.id, 'is not active'
-                    continue
-                if conn.isBusy():
-                    continue
-                chunkInfo = self.files.getChunkOwnedByPeer(conn.id)
-                if chunkInfo == FileStatus.NO_CHUNK_FOUND:
-                    continue
-                fileName, chunk = chunkInfo
-                self.files.markChunkAsBeingRetreived(fileName, chunk, conn.id)
-                action = '%s%s;%d' % (Connection.FILE, encode(fileName), chunk)
-                print self.id, '-', conn.id, 'is about to get action', action
-                conn.addAction(action)
-
-            time.sleep(.1)
 
     def alreadyHasConnection(self, addr, port):
         for conn in self.peerConnections:
@@ -295,7 +364,13 @@ class FileStatus:
     def __init__(self, storage):
         self.files = {} # mapping of file name to array of chunks
         self.storage_ = storage
-        self.lock_ = threading.Lock() # prob will need to use this somewhere
+        self.lock_ = threading.Lock()
+
+    def acquire(self):
+        self.lock_.acquire()
+
+    def release(self):
+        self.lock_.release()
 
     def addLocalFiles(self):
         for file in self.storage_.getLocalFiles():
@@ -305,10 +380,17 @@ class FileStatus:
         self.storage_.writeFile(fileName)
         numChunks = self.storage_.getNumChunks(fileName)
         chunks = [Chunk(Chunk.HAS) for i in range(0, numChunks)]
+        self.acquire()
         self.files[self.storage_.getName(fileName)] = chunks
-        print 'added local file', self.serialize()
+        self.release()
+        #print 'added local file', self.serialize()
 
     def addRemoteFile(self, peer, fileName, maxChunks, chunks):
+        self.acquire()
+        self.addRemoteFileNoLock(peer, fileName, maxChunks, chunks)
+        self.release()
+
+    def addRemoteFileNoLock(self, peer, fileName, maxChunks, chunks):
         if fileName in self.files:
             file = self.files[fileName]
         else:
@@ -316,18 +398,16 @@ class FileStatus:
             self.files[fileName] = file
         for peerOwnedChunk in chunks:
             file[peerOwnedChunk].peers.add(peer)
-        print 'added remote file from', peer, self.serialize()
-
-    def markChunkAsBeingRetreived(self, fileName, chunk, peer):
-        chunk = self.files[fileName][chunk]
-        chunk.status = Chunk.GETTING
-        chunk.gettingFrom = peer
+        #print 'added remote file from', peer, self.serialize()
 
     def markChunkAsRetreived(self, fileName, chunk):
+        self.acquire()
         chunk = self.files[fileName][chunk]
         chunk.status = Chunk.HAS
+        self.release()
 
     def removePeer(self, peer):
+        self.acquire()
         for fileName in self.files:
             chunks = self.files[fileName]
             for chunk in chunks:
@@ -335,13 +415,19 @@ class FileStatus:
                     chunk.peers.remove(peer)
                     if chunk.status == Chunk.GETTING and chunk.gettingFrom == peer:
                         chunk.status = Chunk.NEED
+        self.release()
 
     def getChunkOwnedByPeer(self, peer):
+        self.acquire()
         for fileName in self.files:
             chunks = self.files[fileName]
             for i, chunk in enumerate(chunks):
                 if chunk.status == Chunk.NEED and peer in chunk.peers:
+                    chunk.status = Chunk.GETTING
+                    chunk.gettingFrom = peer
+                    self.release()
                     return (fileName, i)
+        self.release()
         return self.NO_CHUNK_FOUND
 
     # not used atm
@@ -368,18 +454,23 @@ class FileStatus:
         if data == self.NO_FILES:
             return
         files = re.split('(?<!\\\)#', data)
+        self.acquire()
         for file in files:
+            file = decode(file)
             fileName, chunkInfo = re.split('(?<!\\\);', file)
             chunkInfo = chunkInfo.split(',')
             fileName = decode(fileName)
             chunks = [int(i) for i in chunkInfo[1:]]
             maxChunks = int(chunkInfo[0])
-            self.addRemoteFile(peer, fileName, maxChunks, chunks)
+            self.addRemoteFileNoLock(peer, fileName, maxChunks, chunks)
+        self.release()
+
 
     # status of what chunks we own: noah.txt;7,1,2,3,5,6#etc.. - "I have chunks 1, 2, 3, 5, 6 of noah.txt which has 7 chunks total"
     def serialize(self):
         text = ''
         first = True
+        self.acquire()
         for fileName in self.files:
             chunks = self.files[fileName]
             chunkText = ''
@@ -393,6 +484,7 @@ class FileStatus:
             else:
                 first = False
             text += "%s;%d%s" % (encode(fileName), len(chunks), chunkText)
+        self.release()
         if text == '':
             return self.NO_FILES
         return text
@@ -415,7 +507,7 @@ class Storage:
         if not os.path.isfile(os.path.join(os.path.expanduser(dir), os.path.basename(fileName))):
             w = open(os.path.expanduser(dir) + os.path.basename(fileName), "r+")
             w.write(self.readFile(fileName))
-            
+
     def readFile(self, fileName):
         f = open(os.path.expanduser(fileName), "r")
         return f.read()
@@ -424,7 +516,7 @@ class Storage:
         f = open(os.path.expanduser(fileName), "r")
         map = mmap.mmap(f.fileno(), 0)
         return map[(chunk * CHUNK_SIZE):((chunk + 1) * CHUNK_SIZE)]
-    
+
     def writeChunk(self, fileName, chunkNum, data):
         #Assume data is no longer than size CHUNK_SIZE
         f = open(os.path.expanduser(fileName), "r+")
@@ -457,20 +549,62 @@ class Chunk:
 
 
 class Status:
+    def __init__(self):
+        self.files = []
+
     def numFiles(self):
-        return 0
+        return len(self.files)
 
     def fractionPresentLocally(self, fileNum):
-        return -1
+        if not self.isValidIndex(fileNum):
+            return -1
+
+        presentLocally = 0
+        chunks = self.files[fileNum]
+        for chunk in chunks:
+            if chunk.status == Chunk.HAS:
+                presentLocally += 1
+        return float(presentLocally) / len(chunks)
 
     def fractionPresent(self, fileNum):
-        return -1
+        if not self.isValidIndex(fileNum):
+            return -1
+
+        present = 0
+        chunks = self.files[fileNum]
+        for chunk in chunks:
+            if chunk.status == Chunk.HAS or len(chunk.peers) > 0:
+                present += 1
+        return float(present) / len(chunks)
 
     def minimumReplicationLevel(self, fileNum):
-        return -1
+        if not self.isValidIndex(fileNum):
+            return -1
+
+        min = sys.maxint
+        chunks = self.files[fileNum]
+        for chunk in chunks:
+            level = len(chunk.peers)
+            if chunk.status == Chunk.HAS:
+                level += 1
+            if level < min:
+                min = level
+        return min
 
     def averageReplicationLevel(self, fileNum):
-        return -1
+        if not self.isValidIndex(fileNum):
+            return -1
+
+        total = 0
+        chunks = self.files[fileNum]
+        for chunk in chunks:
+            total += len(chunk.peers)
+            if chunk.status == Chunk.HAS:
+                total += 1
+        return float(total) / len(chunks)
+
+    def isValidIndex(self, i):
+        return 0 <= i < len(self.files)
 
 
 def encode(text):
@@ -478,6 +612,8 @@ def encode(text):
 
 def decode(text):
     return text.replace('\\#', '#').replace('\\;', ';').replace('\\\\', '\\')
+
+
 
 PEERS_FILE = '127.0.0.1 10001\n127.0.0.1 10002\n127.0.0.1 10003'
 
@@ -497,3 +633,66 @@ time.sleep(.6)
 p1.leave()
 p2.leave()
 #p3.leave()
+
+
+
+
+
+# ---- TEST RUNNER
+
+#PEERS_FILE = '127.0.0.1 10001\n127.0.0.1 10002\n127.0.0.1 10003\n127.0.0.1 10004\n127.0.0.1 10005'
+#
+#def showStatus(p):
+#    p.query(status)
+#    txt = ''
+#    for i in range(status.numFiles()):
+#        txt += '\t %d - (%f, %f)' % (i, status.fractionPresentLocally(i), status.averageReplicationLevel(i))
+#    print "%s: %s" % (p.id, txt)
+#
+#status = Status()
+#p1 = Peer('127.0.0.1', 10001)
+#p2 = Peer('127.0.0.1', 10002)
+#p3 = Peer('127.0.0.1', 10003)
+#p4 = Peer('127.0.0.1', 10004)
+#p5 = Peer('127.0.0.1', 10005)
+#
+#
+#
+#p1.join()
+#p2.join()
+#p3.join()
+#p4.join()
+#p5.join()
+#
+#p1.insert('noah.txt')
+#p1.insert('sug.doc')
+#p2.insert('boobs.jpg')
+#
+#
+#for i in range(15):
+#    print ' ------------ time', i, '-------------'
+#    showStatus(p1)
+#    showStatus(p2)
+#    showStatus(p3)
+#    showStatus(p4)
+#    showStatus(p5)
+#
+#    if i == 5:
+#        p3.insert('aihazalotoffilechunksupindis.java')
+#
+#    if i == 10:
+#        p3.leave()
+#
+#time.sleep(1)
+#print ' ------------ time end', '-------------'
+#showStatus(p1)
+#showStatus(p2)
+#showStatus(p3)
+#showStatus(p4)
+#showStatus(p5)
+#
+#p1.leave()
+#p2.leave()
+#p3.leave()
+#p4.leave()
+#p5.leave()
