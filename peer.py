@@ -8,7 +8,6 @@ import sys
 import threading
 import time
 import os.path
-import mmap
 
 errOK             =  0; # Everything good
 errUnknownWarning =  1; # Unknown warning
@@ -564,10 +563,9 @@ class Storage:
     def getChunk(self, fileName, chunk):
         self.acquire()
         filePath = os.path.join(self.getPath(), fileName)
-        f = open(filePath, 'r+')
-        map = mmap.mmap(f.fileno(), 0)
-        data = map[(chunk * CHUNK_SIZE):((chunk + 1) * CHUNK_SIZE)]
-        map.close()
+        f = open(filePath, 'r')
+        f.seek(chunk * CHUNK_SIZE)
+        data = f.read((chunk + 1) * CHUNK_SIZE)
         f.close()
         self.release()
         return data
@@ -577,15 +575,12 @@ class Storage:
         self.acquire()
         filePath = os.path.join(self.getPath(), fileName)
         f = open(filePath, "r+")
-        map = mmap.mmap(f.fileno(), 0)
-        map.seek(chunkNum * CHUNK_SIZE)
-        map.write(data)
-        map.close()
+        f.seek(chunkNum * CHUNK_SIZE)
+        f.write(data)
 
         # Resize the file b/c the last chunk may be smaller then CHUNK_SIZE
-        dataSize = len(data)
-        if dataSize < CHUNK_SIZE:
-            f.truncate(chunkNum * CHUNK_SIZE + dataSize)
+        if len(data) < CHUNK_SIZE: # is this the last chunk?
+            f.truncate()
 
         f.close()
         self.release()
