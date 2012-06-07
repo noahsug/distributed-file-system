@@ -434,38 +434,37 @@ class FileStatus:
                         chunk.status = Chunk.NEED
         self.release()
 
+    # Looks at all chunks the peer has and returns the least replicated one
     def getChunkOwnedByPeer(self, peer):
         self.acquire()
-        for fileName in self.files:
-            chunks = self.files[fileName]
-            for i, chunk in enumerate(chunks):
-                if chunk.status == Chunk.NEED and peer in chunk.peers:
-                    chunk.status = Chunk.GETTING
-                    chunk.gettingFrom = peer
-                    self.release()
-                    return (fileName, i)
-        self.release()
-        return self.NO_CHUNK_FOUND
-
-    # not used atm
-    def getLeastReplicatedChunk(self):
         bestFileName = ''
         bestChunk = -1
         leastReplication = sys.maxint
         for fileName in self.files:
             chunks = self.files[fileName]
             for i, chunk in enumerate(chunks):
-                if chunk.status == Chunk.NEED:
+                if chunk.status == Chunk.NEED and peer in chunk.peers:
                     replication = len(chunk.peers)
                     if replication < leastReplication:
                         leastReplication = replication
                         bestFileName = fileName
                         bestChunk = i
                         if replication == 1:
+                            self.markChunkAsBeingRetreived(chunk, peer)
+                            self.release()
                             return (bestFileName, bestChunk)
+
         if bestFileName == '':
+            self.release()
             return self.NO_CHUNK_FOUND
+
+        self.markChunkAsBeingRetreived(self.files[bestChunk], peer)
+        self.release()
         return (bestFileName, bestChunk)
+
+    def markChunkAsBeingRetreived(self, chunk, peer):
+        chunk.status = Chunk.GETTING
+        chunk.gettingFrom = peer
 
     def update(self, peer, data):
         if data == self.NO_FILES:
@@ -675,7 +674,6 @@ class Status:
         return 0 <= i < len(self.files)
 
 
-
 def encode(text):
     return text.replace('\\', '\\\\').replace(';', '\\;').replace('#', '\\#')
 
@@ -687,84 +685,32 @@ def unescape(text):
 
 
 
-PEERS_FILE = '127.0.0.1 10001\n127.0.0.1 10002\n127.0.0.1 10003'
+# ---- SAMPLE USAGE
 
+def showStatus(p):
+    p.query(status)
+    txt = ''
+    for i in range(status.numFiles()):
+        txt += '\t %d - (%f, %f)' % (i, status.fractionPresentLocally(i), status.averageReplicationLevel(i))
+    print "%s: %s" % (p.id, txt)
+
+status = Status()
 p1 = Peer('127.0.0.1', 10001)
 p2 = Peer('127.0.0.1', 10002)
-#p3 = Peer('127.0.0.1', 10003)
+p3 = Peer('127.0.0.1', 10003)
+
 p1.join()
 p2.join()
-#p3.join()
+p3.join()
 
-time.sleep(.5)
 p1.insert('~/noah.txt')
-time.sleep(.6)
-#p1.insert('boobs.txt')
-#time.sleep(1)
+
+for i in range(15):
+    print ' ------------ time', i, '-------------'
+    showStatus(p1)
+    showStatus(p2)
+    showStatus(p3)
 
 p1.leave()
 p2.leave()
-#p3.leave()
-
-
-
-
-
-# ---- TEST RUNNER
-
-#PEERS_FILE = '127.0.0.1 10001\n127.0.0.1 10002\n127.0.0.1 10003\n127.0.0.1 10004\n127.0.0.1 10005'
-#
-#def showStatus(p):
-#    p.query(status)
-#    txt = ''
-#    for i in range(status.numFiles()):
-#        txt += '\t %d - (%f, %f)' % (i, status.fractionPresentLocally(i), status.averageReplicationLevel(i))
-#    print "%s: %s" % (p.id, txt)
-#
-#status = Status()
-#p1 = Peer('127.0.0.1', 10001)
-#p2 = Peer('127.0.0.1', 10002)
-#p3 = Peer('127.0.0.1', 10003)
-#p4 = Peer('127.0.0.1', 10004)
-#p5 = Peer('127.0.0.1', 10005)
-#
-#
-#
-#p1.join()
-#p2.join()
-#p3.join()
-#p4.join()
-#p5.join()
-#
-#p1.insert('noah.txt')
-#p1.insert('sug.doc')
-#p2.insert('boobs.jpg')
-#
-#
-#for i in range(15):
-#    print ' ------------ time', i, '-------------'
-#    showStatus(p1)
-#    showStatus(p2)
-#    showStatus(p3)
-#    showStatus(p4)
-#    showStatus(p5)
-#
-#    if i == 5:
-#        p3.insert('aihazalotoffilechunksupindis.java')
-#
-#    if i == 10:
-#        p3.leave()
-#
-#time.sleep(1)
-#print ' ------------ time end', '-------------'
-#showStatus(p1)
-#showStatus(p2)
-#showStatus(p3)
-#showStatus(p4)
-#showStatus(p5)
-#
-#p1.leave()
-#p2.leave()
-#p3.leave()
-#p4.leave()
-#p5.leave()
+p3.leave()
