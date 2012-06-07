@@ -413,7 +413,8 @@ class FileStatus:
             file = [Chunk() for i in range(0, maxChunks)]
             self.files[fileName] = file
         for peerOwnedChunk in chunks:
-            file[peerOwnedChunk].peers.add(peer)
+            if peerOwnedChunk < len(file):
+                file[peerOwnedChunk].peers.add(peer)
         self.storage_.addEmptyFile(fileName, len(chunks))
         #print 'added remote file from', peer, self.serialize()
 
@@ -454,17 +455,29 @@ class FileStatus:
                             self.release()
                             return (bestFileName, bestChunk)
 
-        if bestFileName == '':
+        if bestFileName == '' or len(self.files[fileName]) <= bestChunk:
             self.release()
             return self.NO_CHUNK_FOUND
 
-        self.markChunkAsBeingRetreived(self.files[bestChunk], peer)
+        if chunk.status != Chunk.NEED:
+            return self.getFirstChunk(peer)
+
+        self.markChunkAsBeingRetreived(self.files[fileName][bestChunk], peer)
         self.release()
         return (bestFileName, bestChunk)
 
     def markChunkAsBeingRetreived(self, chunk, peer):
         chunk.status = Chunk.GETTING
         chunk.gettingFrom = peer
+
+    def getFirstChunk(self, peer):
+        bestFileName = ''
+        bestChunk = -1
+        for fileName in self.files:
+            for i, chunk in enumerate(self.files[fileName]):
+                if chunk.status == Chunk.NEED:
+                    return (fileName, i)
+        return self.NO_CHUNK_FOUND
 
     def update(self, peer, data):
         if data == self.NO_FILES:
@@ -682,35 +695,3 @@ def decode(text):
 
 def unescape(text):
     return text.replace('\\\\', '\\')
-
-
-
-# ---- SAMPLE USAGE
-
-def showStatus(p):
-    p.query(status)
-    txt = ''
-    for i in range(status.numFiles()):
-        txt += '\t %d - (%f, %f)' % (i, status.fractionPresentLocally(i), status.averageReplicationLevel(i))
-    print "%s: %s" % (p.id, txt)
-
-status = Status()
-p1 = Peer('127.0.0.1', 10001)
-p2 = Peer('127.0.0.1', 10002)
-p3 = Peer('127.0.0.1', 10003)
-
-p1.join()
-p2.join()
-p3.join()
-
-p1.insert('~/noah.txt')
-
-for i in range(15):
-    print ' ------------ time', i, '-------------'
-    showStatus(p1)
-    showStatus(p2)
-    showStatus(p3)
-
-p1.leave()
-p2.leave()
-p3.leave()
