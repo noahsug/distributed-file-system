@@ -156,11 +156,12 @@ class Connection(threading.Thread):
         if action[0] == self.FILE:
             self.sendData(action)
             fileName, chunkNum = self.deserializeFileRequest(action[1:])
-            chunkData = self.readData()
+            chunkData = self.readRawData()
             if not chunkData:
                 #print 'DEBUG', '- failed to read file data'
                 self.close()
                 return errCannotConnect
+            numChunks = len(self.peer_.files.files[fileName])
             self.peer_.storage.writeChunk(fileName, chunkNum, chunkData)
             self.peer_.files.markChunkAsRetreived(fileName, chunkNum)
             action = self.PASS
@@ -183,6 +184,19 @@ class Connection(threading.Thread):
             return self.IDLE
         fileName, chunk = chunkInfo
         return '%s%s;%d' % (Connection.FILE, encode(fileName), chunk)
+
+    def readRawData(self):
+        data = ''
+        try:
+            data = self.socket_.recv(CHUNK_SIZE)
+        except:
+            #print 'DEBUG', '- socket failed to recv'
+            pass
+
+        if data:
+            #print self.peer_.id, '- READING RAW DATA', data
+            return data
+        return ''
 
     def readData(self):
         data = ''
@@ -377,12 +391,14 @@ class FileStatus:
             self.addLocalFile(file)
 
     def addLocalFile(self, filePath):
-        self.storage_.copyFileLocally(filePath)
         fileName = os.path.basename(filePath)
+        if fileName in self.files:
+            return # file already exists
+        self.storage_.copyFileLocally(filePath)
         numChunks = self.storage_.getNumChunks(fileName)
         chunks = [Chunk(Chunk.HAS) for i in range(0, numChunks)]
         self.acquire()
-        self.files[self.storage_.getName(fileName)] = chunks
+        self.files[fileName] = chunks
         self.release()
         #print 'added local file', self.serialize()
 
@@ -399,7 +415,7 @@ class FileStatus:
             self.files[fileName] = file
         for peerOwnedChunk in chunks:
             file[peerOwnedChunk].peers.add(peer)
-        self.storage_.addEmptyFile(fileName)
+        self.storage_.addEmptyFile(fileName, len(chunks))
         #print 'added remote file from', peer, self.serialize()
 
     def markChunkAsRetreived(self, fileName, chunk):
@@ -458,7 +474,7 @@ class FileStatus:
         files = re.split('(?<!\\\)#', data)
         self.acquire()
         for file in files:
-            file = decode(file)
+            file = unescape(file)
             fileName, chunkInfo = re.split('(?<!\\\);', file)
             chunkInfo = chunkInfo.split(',')
             fileName = decode(fileName)
@@ -515,12 +531,12 @@ class Storage:
     def getName(self, filePath):
         return os.path.basename(filePath)
 
-    def addEmptyFile(self, fileName):
+    def addEmptyFile(self, fileName, size):
         self.acquire()
         path = os.path.join(self.getPath(), fileName)
         if not os.path.isfile(path):
             w = open(path, "w")
-            w.write('empty')
+            w.write(' ' * size * CHUNK_SIZE) # fill the file with empty space
             w.close()
         self.release()
 
@@ -556,7 +572,6 @@ class Storage:
         self.release()
         return data
 
-
     def writeChunk(self, fileName, chunkNum, data):
         #Assume data is no longer than size CHUNK_SIZE
         self.acquire()
@@ -566,6 +581,12 @@ class Storage:
         map.seek(chunkNum * CHUNK_SIZE)
         map.write(data)
         map.close()
+
+        # Resize the file b/c the last chunk may be smaller then CHUNK_SIZE
+        dataSize = len(data)
+        if dataSize < CHUNK_SIZE:
+            f.truncate(chunkNum * CHUNK_SIZE + dataSize)
+
         f.close()
         self.release()
 
@@ -658,11 +679,15 @@ class Status:
         return 0 <= i < len(self.files)
 
 
+
 def encode(text):
     return text.replace('\\', '\\\\').replace(';', '\\;').replace('#', '\\#')
 
 def decode(text):
     return text.replace('\\#', '#').replace('\\;', ';').replace('\\\\', '\\')
+
+def unescape(text):
+    return text.replace('\\\\', '\\')
 
 
 
