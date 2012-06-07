@@ -377,7 +377,7 @@ class FileStatus:
             self.addLocalFile(file)
 
     def addLocalFile(self, filePath):
-        self.storage_.writeFile(filePath)
+        self.storage_.copyFileLocally(filePath)
         fileName = os.path.basename(filePath)
         numChunks = self.storage_.getNumChunks(fileName)
         chunks = [Chunk(Chunk.HAS) for i in range(0, numChunks)]
@@ -399,6 +399,7 @@ class FileStatus:
             self.files[fileName] = file
         for peerOwnedChunk in chunks:
             file[peerOwnedChunk].peers.add(peer)
+        self.storage_.addEmptyFile(fileName)
         #print 'added remote file from', peer, self.serialize()
 
     def markChunkAsRetreived(self, fileName, chunk):
@@ -514,7 +515,16 @@ class Storage:
     def getName(self, filePath):
         return os.path.basename(filePath)
 
-    def writeFile(self, filePath):
+    def addEmptyFile(self, fileName):
+        self.acquire()
+        path = os.path.join(self.getPath(), fileName)
+        if not os.path.isfile(path):
+            w = open(path, "w")
+            w.write('empty')
+            w.close()
+        self.release()
+
+    def copyFileLocally(self, filePath):
         self.acquire()
         newPath = os.path.join(self.getPath(), os.path.basename(filePath))
         if not os.path.isfile(newPath):
@@ -530,7 +540,7 @@ class Storage:
         return text
 
     def readFileNoLock(self, fileName):
-        f = open(os.path.expanduser(fileName), "r")
+        f = open(os.path.expanduser(fileName), 'r')
         text = f.read()
         f.close()
         return text
@@ -538,7 +548,7 @@ class Storage:
     def getChunk(self, fileName, chunk):
         self.acquire()
         filePath = os.path.join(self.getPath(), fileName)
-        f = open(filePath, "r")
+        f = open(filePath, 'r+')
         map = mmap.mmap(f.fileno(), 0)
         data = map[(chunk * CHUNK_SIZE):((chunk + 1) * CHUNK_SIZE)]
         map.close()
