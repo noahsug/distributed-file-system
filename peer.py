@@ -527,9 +527,6 @@ class Storage:
         dirName = "peer" + str(self.port)
         return os.path.expanduser("~/Share/" + dirName + "/")
 
-    def getName(self, filePath):
-        return os.path.basename(filePath)
-
     def addEmptyFile(self, fileName, size):
         self.acquire()
         path = os.path.join(self.getPath(), fileName)
@@ -555,10 +552,14 @@ class Storage:
         return text
 
     def readFileNoLock(self, fileName):
-        f = open(os.path.expanduser(fileName), 'r')
-        text = f.read()
-        f.close()
+        try:
+            f = open(os.path.expanduser(fileName), 'r')
+            text = f.read()
+            f.close()
+        except:
+            return ''
         return text
+
 
     def getChunk(self, fileName, chunk):
         self.acquire()
