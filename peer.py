@@ -72,7 +72,7 @@ class Connection(threading.Thread):
         self.socket_ = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             self.socket_.connect((addr, port))
-        except Exception as ex:
+        except Exception, ex:
             DB('DEBUG: ' + self.peer_.id + ' - Cannot connect to peer ' + addr + ' ' + str(port) + ' # ' + str(ex))
             self.active = False
             return errPeerNotFound
@@ -158,6 +158,8 @@ class Connection(threading.Thread):
             action = self.getAction()
         self.nextAction()
 
+        DB(self.peer_.id + ' has action ' + action + ' for ' + self.id)
+
         if action[0] == self.FILE:
             self.sendData(action)
             fileName, chunkNum = self.deserializeFileRequest(action[1:])
@@ -197,7 +199,7 @@ class Connection(threading.Thread):
         data = ''
         try:
             data = self.socket_.recv(CHUNK_SIZE)
-        except Exception as ex:
+        except Exception, ex:
             DB('DEBUG: ' + 'failed to read raw data # ' + str(ex))
             pass
 
@@ -209,7 +211,7 @@ class Connection(threading.Thread):
         data = ''
         try:
             data = self.socket_.recv(CHUNK_SIZE)
-        except Exception as ex:
+        except Exception, ex:
             DB('DEBUG: ' + 'failed to read data # ' + str(ex))
             pass
 
@@ -220,7 +222,7 @@ class Connection(threading.Thread):
     def sendData(self, msg):
         try:
             self.socket_.sendall(msg)
-        except Exception as ex:
+        except Exception, ex:
             DB('DEBUG: ' + 'failed to send data # ' + str(ex))
             self.close()
 
@@ -263,7 +265,7 @@ class Peer:
                 addr, port = peerConnection.split(' ')
                 port = int(port)
                 self.peers_.append((addr, port))
-        except Exception as ex:
+        except Exception, ex:
             DB('DEBUG: ' + self.id + ' had an error parsing peers file # ' + str(ex))
             pass
 
@@ -340,7 +342,7 @@ class Peer:
 
         try:
             self.socket.bind((self.addr, self.port))
-        except Exception as ex:
+        except Exception, ex:
             DB('DEBUG: ' + self.id + ' - failed to bind socket to ' + self.addr + ':' + str(self.port) + ' # ' + str(ex))
             return errCannotConnect
 
@@ -353,7 +355,7 @@ class Peer:
         while self.connected:
             try:
                 conn, fullAddr = self.socket.accept()
-            except Exception as ex:
+            except Exception, ex:
                 DB('DEBUG: ' + self.id + ' - failed to accept' + ' # ' + str(ex))
                 time.sleep(.1)
                 continue
@@ -421,11 +423,12 @@ class FileStatus:
             if peerOwnedChunk < len(file):
                 file[peerOwnedChunk].peers.add(peer)
         self.storage_.addEmptyFile(fileName, len(chunks))
-        DB(self.id + ' added remote file. File status looks like ' + str(len(self.files[fileName])))
+        DB(self.id + ' added remote file with ' + str(maxChunks) + ' chunks total, ' + str(len(chunks)) + ' are owned by ' + peer)
 
-    def markChunkAsRetreived(self, fileName, chunk):
+    def markChunkAsRetreived(self, fileName, chunkIndex):
         self.acquire()
-        chunk = self.files[fileName][chunk]
+        chunk = self.files[fileName][chunkIndex]
+        DB(self.id + ' is marking chunk ' + str(chunkIndex) + ' of ' + fileName + ' as received')
         chunk.status = Chunk.HAS
         self.release()
 
@@ -460,12 +463,18 @@ class FileStatus:
                             self.release()
                             return (bestFileName, bestChunk)
 
-        if bestFileName == '' or len(self.files[fileName]) <= bestChunk:
+        if bestFileName in self.files and len(self.files[bestFileName]) <= bestChunk:
+            DB('DEBUG: ' + self.id + ' thinks the best chunk is ' + str(bestChunk) + ', but the file len is ' + str(len(self.files[bestFileName])))
+            self.release()
+            return self.NO_CHUNK_FOUND
+
+        if bestFileName == '':
             self.release()
             return self.NO_CHUNK_FOUND
 
         if chunk.status != Chunk.NEED:
-            return self.getFirstChunk(peer)
+            DB('DEBUG: ' + self.id + ' thinks the best chunk is ' + str(bestChunk) + ', but its status is ' + chunk.status)
+            return self.getFirstChunkNoLock(peer)
 
         self.markChunkAsBeingRetreived(self.files[fileName][bestChunk], peer)
         self.release()
@@ -475,12 +484,13 @@ class FileStatus:
         chunk.status = Chunk.GETTING
         chunk.gettingFrom = peer
 
-    def getFirstChunk(self, peer):
+    def getFirstChunkNoLock(self, peer):
         bestFileName = ''
         bestChunk = -1
         for fileName in self.files:
             for i, chunk in enumerate(self.files[fileName]):
                 if chunk.status == Chunk.NEED:
+                    self.markChunkAsBeingRetreived(chunk, peer)
                     return (fileName, i)
         return self.NO_CHUNK_FOUND
 
@@ -496,6 +506,7 @@ class FileStatus:
             fileName = decode(fileName)
             chunks = [int(i) for i in chunkInfo[1:]]
             maxChunks = int(chunkInfo[0])
+            DB(self.id + ' is being updated with ' + fileName + ' from ' + peer + ' with ' + str(len(chunks)) + ' chunks owned out of ' + str(maxChunks))
             self.addRemoteFileNoLock(peer, fileName, maxChunks, chunks)
         self.release()
 
@@ -573,7 +584,7 @@ class Storage:
             f = open(os.path.expanduser(fileName), 'r')
             text = f.read()
             f.close()
-        except Exception as ex:
+        except Exception, ex:
             DB('DEBUG: failed to readFileNoLock # ' + str(ex))
             return ''
         return text
@@ -584,7 +595,7 @@ class Storage:
         filePath = os.path.join(self.getPath(), fileName)
         f = open(filePath, 'r')
         f.seek(chunk * CHUNK_SIZE)
-        data = f.read((chunk + 1) * CHUNK_SIZE)
+        data = f.read(CHUNK_SIZE)
         f.close()
         self.release()
         return data
@@ -705,7 +716,8 @@ def unescape(text):
 # thread safe printing for debugging purposes
 dbLock = threading.Lock()
 def DB(text):
-    dbLock.acquire()
-    print text
-    dbLock.release()
+    pass
+#    dbLock.acquire()
+#    print text
+#    dbLock.release()
 

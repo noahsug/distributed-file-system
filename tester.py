@@ -16,9 +16,9 @@ p1 = Peer('127.0.0.1', 10001)
 p2 = Peer('127.0.0.1', 10002)
 p3 = Peer('127.0.0.1', 10003)
 
-p1.join()
-p2.join()
-p3.join()
+print p1.join()
+print p2.join()
+print p3.join()
 
 p2.insert('~/file1.txt')
 p3.insert('~/file2.txt')
