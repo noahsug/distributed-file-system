@@ -1,5 +1,12 @@
 #!/usr/bin/python
 
+##
+# TO RUN:
+# A file named 'peers.txt' needs to be in the same directory as the python source.
+# The contents of 'peers.txt' need to be "127.0.0.1 10001\n127.0.0.1 10002\n127.0.0.1 10003"
+# Two files, 'file1.txt' and 'file2.txt' need to be present in the home directory and have some content.
+##
+
 import time
 import peer
 from peer import *
@@ -23,17 +30,17 @@ print p3.join()
 p2.insert('~/file1.txt')
 p3.insert('~/file2.txt')
 
-for i in range(14):
+for i in range(20):
     print ' ------------ time', i, '-------------'
     showStatus(p1)
     showStatus(p2)
     showStatus(p3)
 
-#    if i == 19:
-#        p3.leave()
+    if i == 10:
+        p3.leave()
 
 time.sleep(2)
-print ' ------------ time', '22', '-------------'
+print ' ------------ time', 'end', '-------------'
 showStatus(p1)
 showStatus(p2)
 showStatus(p3)
