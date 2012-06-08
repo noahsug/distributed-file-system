@@ -23,7 +23,7 @@ p3.join()
 p2.insert('~/file1.txt')
 p3.insert('~/file2.txt')
 
-for i in range(15):
+for i in range(14):
     print ' ------------ time', i, '-------------'
     showStatus(p1)
     showStatus(p2)
@@ -32,7 +32,7 @@ for i in range(15):
 #    if i == 19:
 #        p3.leave()
 
-time.sleep(1)
+time.sleep(2)
 print ' ------------ time', '22', '-------------'
 showStatus(p1)
 showStatus(p2)
