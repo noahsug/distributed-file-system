@@ -15,6 +15,9 @@ class Logger:
     def d(self, msg):
         log('DEBUG', msg)
 
+    def w(self, msg):
+        log('WARNING', msg)
+
     def e(self, msg):
         log('ERROR', msg)
 

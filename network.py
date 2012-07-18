@@ -5,6 +5,12 @@ class Network:
     ##
     # Public API
     ##
+    def connect():
+        pass
+
+    def disconnect():
+        pass
+
     def getFile(fileName, chunksOwned):
         # ask each peer for a random file chunk
         pass
@@ -19,9 +25,6 @@ class Network:
     def fileEdited(fileName, edit):
         pass
 
-    def disconnected():
-        pass
-
     def retired():
         pass
 
@@ -29,4 +32,9 @@ class Network:
         # poll other peers to get up to date file status
         pass
 
+    ##
+    # Private methods
+    ##
+    def newPeerConnected(self, socket):
+        pass
 
