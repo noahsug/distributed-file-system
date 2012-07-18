@@ -4,16 +4,20 @@
 
 import id
 from id import ID
-
 import network
 from network import Network
-
 import error as err
 
 class Peer:
+    id = ID()
+    addr = 0
+    port = 0
+
     def __init__(self, addr, port):
-        self.id = ID(addr, port)
-        self.network = Network(id)
+        Peer.addr = addr
+        Peer.port = port
+        Peer.id.init(addr, port)
+        self.network = Network()
 
     ##
     # Public API
