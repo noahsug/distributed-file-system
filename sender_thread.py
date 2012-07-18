@@ -1,3 +1,7 @@
+##
+# Sends requests and data to all other peers
+##
+
 import threading
 from threading import Thread
 
