@@ -2,16 +2,14 @@
 # A node in the distributed p2p file system that runs on a device
 ##
 
-from system_state import dfs
 from network import Network
 import error as err
+import DFS from dfs_state
 
 class Peer:
     def __init__(self, addr, port):
-        dfs.addr = addr
-        dfs.port = port
-        dfs.id.init(addr, port)
-        self.network = Network()
+        self.dfs = DFS(addr, port)
+        self.network = Network(self.dfs)
 
     ##
     # Public API

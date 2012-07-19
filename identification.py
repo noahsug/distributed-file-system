@@ -1,6 +1,9 @@
 class ID:
-    def __init__(self):
-        self.str = 'id not init'
+    def __init__(self, port=0, addr=0):
+        if port:
+            self.str = "%s:%d" % (self.addr, self.port)
+        else:
+            self.str = 'id not init'
 
     def init(self, port, addr):
         self.str = "%s:%d" % (self.addr, self.port)

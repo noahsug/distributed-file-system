@@ -3,13 +3,13 @@
 ##
 
 from lock import Lock
-from system_state import dfs
 
 class Logger:
     lock_ = Lock('Logger')
 
-    def __init__(self, tag):
+    def __init__(self, tag, dfs):
         self.tag = tag
+        self.dfs = dfs
 
     def d(self, msg):
         self.log('DEBUG', msg)
@@ -22,5 +22,5 @@ class Logger:
 
     def log(self, verbosity, msg):
         Logger.lock_.acquire()
-        print '%s> %s # %s: %s' % (dfs.id, verbosity, self.tag, msg)
+        print '%s> %s # %s: %s' % (self.dfs.id, verbosity, self.tag, msg)
         Logger.lock_.release()

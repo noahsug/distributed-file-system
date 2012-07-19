@@ -9,11 +9,11 @@ import peer
 from debug import Logger
 
 class NewPeerListener(Thread):
-    print debug
-    log = Logger('NewPeerListener')
 
-    def __init__(self, callback):
+    def __init__(self, callback, dfs):
         Thread.__init__(self)
+        self.log = Logger('NewPeerListener', dfs)
+        self.dfs = dfs
         self.callback = callback
         self.active = True
 

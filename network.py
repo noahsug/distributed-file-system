@@ -4,15 +4,15 @@ import debug
 #from debug import Logger
 
 class Network:
-    def __init__(self, id):
-        self.id = id
+    def __init__(self, dfs):
+        self.dfs = dfs
 #        self.log = Logger('Network')
 
     ##
     # Public API
     ##
     def connect():
-        self.newPeerListener = NewPeerListener(self.newPeerConnected)
+        self.newPeerListener = NewPeerListener(self.newPeerConnected, self.dfs)
         self.newPeerListener.start()
 
     def disconnect():
