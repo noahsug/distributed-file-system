@@ -2,16 +2,14 @@
 # Creates sockets and listens for new peers that join the DFS.
 ##
 
-import threading
 from threading import Thread
 import socket
 
 import peer
-
-import debug
-import Log from debug
+from debug import Logger
 
 class NewPeerListener(Thread):
+    print debug
     log = Logger('NewPeerListener')
 
     def __init__(self, callback):
@@ -31,6 +29,13 @@ class NewPeerListener(Thread):
 
         self.socket_.listen(3)
         self.listenForNewPeers()
+
+    def close(self):
+        self.active = False
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket_.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.connect((peer.addr, peer.port))
+        s.close()
 
     def listenForNewPeers(self):
         while self.active:

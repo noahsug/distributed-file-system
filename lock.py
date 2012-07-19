@@ -9,7 +9,7 @@ class Lock:
         self.tag = tag
         self.lock_ = threading.Lock()
 
-    def aquire(self):
+    def acquire(self):
         self.lock_.acquire()
 
     def release(self):

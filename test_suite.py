@@ -1,10 +1,11 @@
 #!/usr/bin/python
 
-import sender_thread
-from sender_thread import SenderThread
+from debug import Logger
 
-import error as err
+def test():
+    log = Logger('TestSuite')
+    log.d('hey thar')
+    log.e('cow boy')
+    log.w('OH NO')
 
-sender = SenderThread()
-sender.sayHi()
-
+test()

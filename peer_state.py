@@ -2,8 +2,8 @@
 # Keeps track of which peers are part of the DFS
 ##
 
-import threading
+from lock import Lock
 
 class PeerState:
     def __init__(self):
-        self.lock_ = threading.Lock()
+        self.lock_ = Lock('PeerState')

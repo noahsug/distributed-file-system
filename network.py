@@ -1,15 +1,22 @@
+import new_peer_listener
+from  new_peer_listener import NewPeerListener
+import debug
+#from debug import Logger
+
 class Network:
     def __init__(self, id):
         self.id = id
+#        self.log = Logger('Network')
 
     ##
     # Public API
     ##
     def connect():
-        pass
+        self.newPeerListener = NewPeerListener(self.newPeerConnected)
+        self.newPeerListener.start()
 
     def disconnect():
-        pass
+        self.newPeerListener.close()
 
     def getFile(fileName, chunksOwned):
         # ask each peer for a random file chunk

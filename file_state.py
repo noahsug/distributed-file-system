@@ -4,8 +4,8 @@
 # - For each file, the # of chunks owned and edit history is stored.
 ##
 
-import threading
+from lock import Lock
 
 class FileState:
     def __init__(self):
-        self.lock_ = threading.Lock()
+        self.lock_ = Lock('FileState')

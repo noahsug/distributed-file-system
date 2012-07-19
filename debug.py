@@ -2,9 +2,8 @@
 # Provides debugging functionality.
 ##
 
-import lock
-import lock import Lock
-import peer
+from lock import Lock
+from system_state import dfs
 
 class Logger:
     lock_ = Lock('Logger')
@@ -13,15 +12,15 @@ class Logger:
         self.tag = tag
 
     def d(self, msg):
-        log('DEBUG', msg)
+        self.log('DEBUG', msg)
 
     def w(self, msg):
-        log('WARNING', msg)
+        self.log('WARN ', msg)
 
     def e(self, msg):
-        log('ERROR', msg)
+        self.log('ERROR', msg)
 
     def log(self, verbosity, msg):
-        lock_.acquire()
-        print '%s # %s %s - %s' % (verbosity, self.tag, peer.id, msg)
-        lock_.release()
+        Logger.lock_.acquire()
+        print '%s> %s # %s: %s' % (dfs.id, verbosity, self.tag, msg)
+        Logger.lock_.release()

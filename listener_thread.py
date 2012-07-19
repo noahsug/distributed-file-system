@@ -3,7 +3,6 @@
 # requests and updates the sending thread with new work to do.
 ##
 
-import threading
 from threading import Thread
 
 class ListenerThread(Thread):
