@@ -3,51 +3,42 @@
 ##
 
 from threading import Thread
-import socket
+import time
 
-import peer
-from debug import Logger
+from base import Base
+import socket, dfs_socket
 
-class NewPeerListener(Thread):
+class NewPeerListener(Base, Thread):
 
     def __init__(self, callback, dfs):
         Thread.__init__(self)
-        self.log = Logger('NewPeerListener', dfs)
-        self.dfs = dfs
-        self.callback = callback
-        self.active = True
+        Base.__init__(self, dfs)
+        self.callback_ = callback
+        self.active_ = True
 
     def run(self):
-        self.socket_ = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket_.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
+        self.socket_ = dfs_socket.DFSSocket()
         try:
-            self.socket_.bind((peer.addr, peer.port))
+            self.socket_.bind((self.dfs_.addr, self.dfs_.port))
         except Exception, ex:
-            log.e('failed to bind: %s', str(ex))
+            self.log_.e(('failed to bind: %s', str(ex)))
             return
 
         self.socket_.listen(3)
         self.listenForNewPeers()
 
     def close(self):
-        self.active = False
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket_.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        s.connect((peer.addr, peer.port))
-        s.close()
+        self.active_ = False
 
     def listenForNewPeers(self):
-        while self.active:
+        while self.active_:
             try:
                 conn, fullAddr = self.socket_.accept()
+            except socket.timeout:
+                continue
             except Exception, ex:
-                log.w('failed to accept: %s', str(ex))
+                self.log_.w('failed to accept: %s', str(ex))
                 time.sleep(.1)
                 continue
 
-            if not self.active:
-                conn.close()
-                break
-
-            callback(conn)
+            self.callback_(conn)

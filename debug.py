@@ -6,11 +6,14 @@ from lock import Lock
 
 class Logger:
     lock_ = Lock('Logger')
-    verbosity = ['DEBUG', 'WARN ', 'ERROR']
+    verbosity = ['VERBO', 'DEBUG', 'WARN ', 'ERROR']
 
     def __init__(self, tag, dfs):
         self.tag = tag
         self.dfs = dfs
+
+    def v(self, msg):
+        self.log('VERBO', msg)
 
     def d(self, msg):
         self.log('DEBUG', msg)

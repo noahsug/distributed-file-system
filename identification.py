@@ -1,5 +1,5 @@
 class ID:
-    def __init__(self, port=0, addr=0):
+    def __init__(self, addr='', port=0):
         if port:
             self.str = "%s:%d" % (self.addr, self.port)
         else:

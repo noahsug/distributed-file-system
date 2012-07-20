@@ -1,42 +1,37 @@
 from  new_peer_listener import NewPeerListener
-from debug import Logger
+from base import Base
 
-class Network:
-    def __init__(self, dfs):
-        self.dfs_ = dfs
-        self.log_ = Logger('Network', self.dfs_)
-        self.log_.d('init')
-
+class Network(Base):
     ##
     # Public API
     ##
-    def connect():
-        self.log_('connect')
+    def connect(self):
+        self.log_.d('connect')
         self.newPeerListener = NewPeerListener(self.newPeerConnected, self.dfs_)
         self.newPeerListener.start()
 
-    def disconnect():
-        self.log_('disconnect')
+    def disconnect(self):
+        self.log_.d('disconnect')
         self.newPeerListener.close()
 
-    def getFile(fileName, chunksOwned):
+    def getFile(self, fileName, chunksOwned):
         #ask each peer for a random file chunk
         pass
 
-    def fileAdded(fileName):
+    def fileAdded(self, fileName):
         pass
 
-    def fileDeleted(fileName):
+    def fileDeleted(self, fileName):
         #update each peer that the file has been deleted
         pass
 
-    def fileEdited(fileName, edit):
+    def fileEdited(self, fileName, edit):
         pass
 
-    def retired():
+    def retired(self):
         pass
 
-    def update():
+    def update(self):
         #poll other peers to get up to date file status
         pass
 
@@ -44,6 +39,6 @@ class Network:
     # Private methods
     ##
     def newPeerConnected(self, socket):
-        self.log('new peer connected')
+        self.log_('new peer connected')
         pass
 

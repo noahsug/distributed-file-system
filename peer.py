@@ -5,11 +5,12 @@
 from network import Network
 import error as err
 from dfs_state import DFS
+from base import Base
 
-class Peer:
+class Peer(Base):
     def __init__(self, addr, port):
-        self.dfs = DFS(addr, port)
-        self.network = Network(self.dfs)
+        Base.__init__(self, DFS(addr, port))
+        self.network = Network(self.dfs_)
 
     ##
     # Public API
@@ -40,10 +41,12 @@ class Peer:
 
     # enable internet connection
     def connect(self):
+        self.network.connect()
         pass
 
     # disable internet connection
     def disconnect(self):
+        self.network.disconnect()
         pass
 
     # join DFS, connecting to the peer at the given addr and port
