@@ -4,7 +4,7 @@
 
 from network import Network
 import error as err
-import DFS from dfs_state
+from dfs_state import DFS
 
 class Peer:
     def __init__(self, addr, port):
@@ -14,50 +14,50 @@ class Peer:
     ##
     # Public API
     ##
-    def open(fileName, op):
+    def open(self, fileName, op):
         pass
 
-    def close(fileName):
+    def close(self, fileName):
         pass
 
-    def read(fileName, buf, offset, bufsize):
+    def read(self, fileName, buf, offset, bufsize):
         pass
 
-    def write(fileName, buf, offset, bufsize):
+    def write(self, fileName, buf, offset, bufsize):
         pass
 
-    def delete(fileName):
+    def delete(self, fileName):
         pass
 
-    def listFiles():
+    def listFiles(self):
         pass
 
-    def pin(fileName):
+    def pin(self, fileName):
         pass
 
-    def unpin(fileName):
+    def unpin(self, fileName):
         pass
 
     # enable internet connection
-    def connect():
+    def connect(self):
         pass
 
     # disable internet connection
-    def disconnect():
+    def disconnect(self):
         pass
 
     # join DFS, connecting to the peer at the given addr and port
-    def join(addr, port):
+    def join(self, addr, port):
         pass
 
-    def retire():
+    def retire(self):
         pass
 
-    def query():
+    def query(self):
         pass
 
     # exits the program
-    def exit():
+    def exit(self):
         # write system status to disk
         exit()
 
