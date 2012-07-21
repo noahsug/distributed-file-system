@@ -13,9 +13,9 @@ class ListenerThread(NetworkThread):
         self.socket_ = dfs_socket.DFSSocket()
         try:
             self.socket_.connect((self.connDFS_.addr, self.connDFS_.port))
-         except Exception, ex:
-             self.log_.w('peer ' + str(self.connDFS_.id) + ' not found: ' + str(ex))
-             self.close()
+        except Exception, ex:
+            self.log_.w('peer ' + str(self.connDFS_.id) + ' not found: ' + str(ex))
+            self.close()
 
     def setConnection(self, conn):
         pass
