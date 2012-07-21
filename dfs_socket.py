@@ -5,6 +5,8 @@ import socket
 
 socket.setdefaulttimeout(2)
 
+timeout = socket.timeout
+
 class DFSSocket(socket.socket):
     def __init__(self):
         socket.socket.__init__(self, socket.AF_INET, socket.SOCK_STREAM)

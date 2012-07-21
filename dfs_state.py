@@ -5,7 +5,9 @@
 from identification import ID
 
 class DFS:
-    def __init__(self, addr, port):
+    def __init__(self, addr='', port=10000):
         self.addr = addr
         self.port = port
         self.id = ID(addr, port)
+
+NullDFS = DFS()

@@ -2,6 +2,10 @@ from  new_peer_listener import NewPeerListener
 from base import Base
 
 class Network(Base):
+    def __init__(self, dfs):
+        Base.__init__(self, dfs)
+        self.connect()
+
     ##
     # Public API
     ##
@@ -9,6 +13,9 @@ class Network(Base):
         self.log_.d('connect')
         self.newPeerListener = NewPeerListener(self.newPeerConnected, self.dfs_)
         self.newPeerListener.start()
+
+    def join(self, dfs):
+        pass
 
     def disconnect(self):
         self.log_.d('disconnect')
@@ -26,9 +33,6 @@ class Network(Base):
         pass
 
     def fileEdited(self, fileName, edit):
-        pass
-
-    def retired(self):
         pass
 
     def update(self):

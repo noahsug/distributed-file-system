@@ -3,15 +3,15 @@
 import time
 
 from dfs_state import DFS
-from debug import Logger
 from peer import Peer
 
 def test():
-    log = Logger('TestSuite', DFS(0, 0))
-    log.v('Test starting')
+    p1 = Peer('localhost', 10001)
+    p2 = Peer('localhost', 10002)
 
-    p = Peer('localhost', 0)
-    p.connect()
-    p.disconnect()
+    time.sleep(1)
+
+    p1.disconnect()
+    p2.disconnect()
 
 test()

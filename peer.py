@@ -10,7 +10,7 @@ from base import Base
 class Peer(Base):
     def __init__(self, addr, port):
         Base.__init__(self, DFS(addr, port))
-        self.network = Network(self.dfs_)
+        self.network_ = Network(self.dfs_)
 
     ##
     # Public API
@@ -39,21 +39,13 @@ class Peer(Base):
     def unpin(self, fileName):
         pass
 
-    # enable internet connection
-    def connect(self):
-        self.network.connect()
-        pass
-
-    # disable internet connection
-    def disconnect(self):
-        self.network.disconnect()
-        pass
-
     # join DFS, connecting to the peer at the given addr and port
     def join(self, addr, port):
-        pass
+        self.network_.join(DFS(addr, port))
 
-    def retire(self):
+    # disconnect from the internet
+    def disconnect(self):
+        self.network_.disconnect()
         pass
 
     def query(self):

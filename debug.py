@@ -2,15 +2,15 @@
 # Provides debugging functionality.
 ##
 
-from lock import Lock
+import threading
 
 class Logger:
-    lock_ = Lock('Logger')
+    lock_ = threading.Lock()
     verbosity = ['VERBO', 'DEBUG', 'WARN ', 'ERROR']
 
     def __init__(self, tag, dfs):
-        self.tag = tag
-        self.dfs = dfs
+        self.tag_ = tag
+        self.dfs_ = dfs
 
     def v(self, msg):
         self.log('VERBO', msg)
@@ -28,5 +28,6 @@ class Logger:
         if not verbosity in Logger.verbosity:
             return
         Logger.lock_.acquire()
-        print '%s> %s # %s: %s' % (self.dfs.id, verbosity, self.tag, msg)
+        shorthand = self.dfs_.port - 10000
+        print '%s> %s # %s: %s' % (shorthand, verbosity, self.tag_, msg)
         Logger.lock_.release()
