@@ -43,12 +43,11 @@ class Network(Base):
         self.sender_.close()
 
     def getFile(self, fileName, chunksOwned):
-        #ask each peer for a random file chunk
+        # ask each peer for a random file chunk until the file is fully retrieved
         pass
 
     def fileAdded(self, fileName):
         self.sender_.addWork('123456789'*5 + dfs_socket.DATA_TERMINATOR)
-
 
     def fileDeleted(self, fileName):
         #update each peer that the file has been deleted

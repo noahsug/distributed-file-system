@@ -40,10 +40,16 @@ class Peer(Base):
         files.fromlist(self.fileSystem_.list())
         return err.OK
 
+    # mark the file as stable
+    def stable(self, fileName):
+        pass
+
+    # save the most recent version of the file locally
     def pin(self, fileName):
         status = self.updateFile(fileName)
         return status
 
+    # delete the local copy of the file
     def unpin(self, fileName):
         self.fileSystem_.deleteLocalCopy(fileName)
         return err.OK

@@ -14,4 +14,3 @@ class LogicalView(Base):
         Base.__init__(self, dfs)
         self.lock_ = Lock(dfs)
         self.fileList = {}
-

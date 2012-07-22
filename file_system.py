@@ -18,6 +18,7 @@ class FileSystem(Base):
     ##
     def loadFromState(self, state):
         self.logical_ = state
+        # TODO: do a check to make sure the physical view matches the logical view
 
     def delete(self, fileName):
         pass
