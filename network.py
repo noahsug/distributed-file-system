@@ -6,6 +6,7 @@ from  new_peer_listener import NewPeerListener
 from listener_thread import ListenerThread
 from sender_thread import SenderThread
 from base import Base
+from file_system import FileSystem
 
 import dfs_socket
 
@@ -48,7 +49,6 @@ class Network(Base):
 
     def fileDeleted(self, fileName):
         #update each peer that the file has been deleted
-        
         pass
 
     def fileEdited(self, fileName, edit):

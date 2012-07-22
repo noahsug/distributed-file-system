@@ -10,3 +10,4 @@ NoPeersFound   = -4 # Cannot find any peer (e.g., no peers in a peer file); fata
 PeerNotFound   =  5 # Cannot find some peer; warning, since others may be connectable
 NotActive      = -6 # Can't do said operation because this object is not longer active
 CannotReadFile = -7 # Error reading the file
+InvalidBufferSize = -8

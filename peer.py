@@ -3,71 +3,72 @@
 ##
 
 from network import Network
+from file_system import FileSystem
 import error as err
 from dfs_state import DFS
 from base import Base
-from storage import Storage
 
 class Peer(Base):
     def __init__(self, addr, port):
         Base.__init__(self, DFS(addr, port))
-        self.network_ = Network(self.dfs_) # handles sending/recieving data to/from other peers
-        self.storage_ = Storage(self.dfs_) # handles writing/reading to/from disk
-        self.view_ = View(self.dfs_) # manages the logically view
+        self.network_ = Network(self.dfs_)
+        self.fs_ = FileSystem(self.dfs_)
 
     ##
     # Public API
     ##
     def read(self, fileName, buf, offset, bufsize):
         status = self.updateFile(fileName)
-        file = self.storage_.open(fileName, offset)
-        try:
-            buf.fromfile(file, bufsize)
-        except Exception, ex:
-            self.log_.e('failed to read ' + fileName + ' from ' + str(offset) + ' to ' + str(offset + bufsize) + ': ' + str(ex))
-            status = err.CannotReadFile
+        if status >= 0:
+            status = self.fs_.readIntoBuffer(fileName, buf, offset, bufsize)
         return status
 
     def write(self, fileName, buf, offset, bufsize):
-        if self.isNewFile(fileName):
-        self.network_.fileAdded(fileName)
-        self.open(fileName, "w")
-        pass
+        if self.fs_.exists(fileName):
+            self.fs_.write(fileName, buf, offset, bufsize)
+        else:
+            self.fs_.add(fileName, buf, offset, bufsize)
+            self.network_.fileAdded(fileName)
+        return err.OK
 
     def delete(self, fileName):
-        self.view_.deleteFile(fileName)
-        self.storage_.deleteFile(fileName)
+        self.fs_.delete(fileName)
         self.network_.fileDeleted(fileName)
+        return err.OK
 
-    def listFiles(self):
-        return self.view_.listFiles()
+    def listFiles(self, files):
+        files.fromlist(self.fs_.list())
+        return err.OK
 
     def pin(self, fileName):
-        return self.updateFile()
+        status = self.updateFile(fileName)
+        return status
 
     def unpin(self, fileName):
-        self.storage_.deleteFile(fileName)
-        self.view_.localCopyDeleted(fileName)
+        self.fs_.deleteLocalCopy(fileName)
+        return err.OK
 
     # join DFS, connecting to the peer at the given addr and port if given
     def join(self, addr, port):
-        self.network_.join(DFS(addr, port))
+        status = self.network_.join(DFS(addr, port))
+        return status
 
     # retire from the system
     def retire(self):
-        pass
+        return err.OK
 
     # connect to the internet
     def connect(self):
         self.network_.connect()
+        return err.OK
 
     # disconnect from the internet
     def disconnect(self):
         self.network_.disconnect()
-        pass
+        return err.OK
 
-    def query(self):
-        pass
+    def query(self, status):
+        return err.OK
 
     # exits the program
     def exit(self):
@@ -79,17 +80,6 @@ class Peer(Base):
     ##
     def updateFile(self, fileName):
         status = err.OK
-        if not self.view_.existsLocally(fileName):
+        if not self.fs_.isUpToDate(fileName):
             status = network.getFile(self, fileName)
         return status
-
-    def open(self, fileName, op):
-        if not self.view_.existsLocally(fileName):
-            #if file does not exist locally, get file then open
-            self.log_.d("file does not exist locally, pull")
-            self.network_.getFile(fileName, self.file_state.fileList[fileName].chunksOwned)
-
-        self.f = open(fileName, op)
-
-    def close(self, fileName):
-        self.f.close()

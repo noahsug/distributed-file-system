@@ -1,37 +1,30 @@
+##
+# Represents the physical view of the DFS.
+##
+
 import os.path
 
 import dfs_socket
 from base import Base
 from lock import Lock
-from file import File
-from file_state import FileState
 
-class Storage(Base):
-    
-    shareFolderPath = os.path.expanduser("~/Share/")
+shareFolderPath = os.path.expanduser("~/Share/")
 
+class PhysicalView(Base):
     def __init__(self, dfs):
         Base.__init__(self, dfs)
         self.lock_ = Lock(dfs)
-        self.dfs = dfs
-        self.file_state = FileState(self.dfs_)
-        self.fileList = {}
+        self.createBaseFolder()
 
-        if not os.path.isdir(Storage.shareFolderPath):
-            os.mkdir(Storage.shareFolderPath)
+    def createBaseFolder(self):
+        if not os.path.isdir(shareFolderPath):
+            os.mkdir(shareFolderPath)
+        if not os.path.isdir(self.getBasePath()):
+            os.mkdir(self.getBasePath())
 
-        if not os.path.isdir(self.getPath()):
-            os.mkdir(self.getPath())
-
-    def acquire(self):
-        self.lock_.acquire()
-
-    def release(self):
-        self.lock_.release()
-
-    def getPath(self):
-        dirName = "peer" + self.dfs.id
-        return Storage.shareFolderPath + dirName + "/"
+    def getBasePath(self):
+        dirName = "peer" + str(self.dfs_.id)
+        return shareFolderPath + dirName + "/"
 
     def addEmptyFile(self, fileName, size):
         self.acquire()
@@ -110,13 +103,13 @@ class Storage(Base):
                     fileList.append(localFilePath)
         self.release()
         return fileList
-    
+
     def addFile(self, fileName, numChunks):
         self.acquire()
         f = File(fileName, numChunks, self.dfs_.id)
         self.fileList[fileName] = f
         self.release()
-    
+
     def deleteFile(self, fileName):
         self.acquire()
         del self.fileList[fileName]
@@ -134,9 +127,21 @@ class Storage(Base):
 
     def hasConflict(self, fileName, numEdits):
         pass
-    
+
     def serializeStateToDisk(self):
         pass
 
     def deserializeStateFromDisk(self):
         pass
+
+    def readIntoBuffer(self, fileName, buf, offset, bufsize):
+        # TODO add thread safetly
+        status = err.OK
+        open(fileName, offset)
+        try:
+            buf.fromfile(file, bufsize)
+        except Exception, ex:
+            self.log_.e('failed to read ' + fileName + ' from ' + str(offset) + ' to ' + str(offset + bufsize) + ': ' + str(ex))
+            status = err.CannotReadFile
+        close(fileName)
+        return status
