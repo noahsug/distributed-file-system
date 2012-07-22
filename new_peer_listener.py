@@ -24,7 +24,7 @@ class NewPeerListener(NetworkThread):
 
     def doWork(self):
         try:
-            conn, fullAddr = self.socket_.accept()
+            conn, _fullAddr = self.socket_.accept()
         except dfs_socket.timeout:
             return
         except Exception, ex:

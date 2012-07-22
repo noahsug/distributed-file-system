@@ -6,29 +6,44 @@ from network import Network
 import error as err
 from dfs_state import DFS
 from base import Base
+from storage import Storage
 
 class Peer(Base):
     def __init__(self, addr, port):
         Base.__init__(self, DFS(addr, port))
         self.network_ = Network(self.dfs_)
+        self.storage = Storage(self.dfs_)
 
     ##
     # Public API
     ##
     def open(self, fileName, op):
-        pass
+        if(not self.file_state.fileList[fileName].existsLocally()):
+            #if file does not exist locally, get file then open
+            self.log_.d("file does not exist locally, pull")
+            self.network_.getFile(fileName, self.file_state.fileList[fileName].chunksOwned)
+            
+        self.f = open(fileName, op)
 
     def close(self, fileName):
-        pass
+        self.f.close()
 
     def read(self, fileName, buf, offset, bufsize):
+        self.open(fileName, "r")
+        
+        # what are buf, offset, and bufsize respectively?
+        
         pass
 
     def write(self, fileName, buf, offset, bufsize):
         self.network_.fileAdded(fileName)
+        self.open(fileName, "w")
+        pass
+        
 
     def delete(self, fileName):
-        pass
+        self.storage.deleteFile(fileName)
+        self.network_.fileDeleted(fileName)
 
     def listFiles(self):
         pass

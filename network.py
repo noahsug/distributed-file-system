@@ -48,6 +48,7 @@ class Network(Base):
 
     def fileDeleted(self, fileName):
         #update each peer that the file has been deleted
+        
         pass
 
     def fileEdited(self, fileName, edit):

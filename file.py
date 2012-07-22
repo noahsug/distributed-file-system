@@ -4,13 +4,15 @@
 # - For each file, a count of how many global edits have accumulated on the file.
 ##
 
-class File():
+from base import Base
+
+class File(Base):
 
     def __init__(self, fileName, numChunks, lastEdited):
         self.name = fileName
         self.numChunksTotal = numChunks
         self.numChunksOwned = 0
-        self.chunksOwned = [False] * numberChunks
+        self.chunksOwned = [False] * numChunks
         self.numEdits = 1
         self.lastEdited = lastEdited
 
