@@ -34,7 +34,7 @@ class ListenerThread(NetworkThread):
         if not self.active_:
             return err.NotActive
         try:
-            self.socket_.sendall(data)
+            self.socket_.sendall(data + dfs_socket.DATA_TERMINATOR)
         except Exception, ex:
             self.log_.w('cannot send data to ' + str(self.connDFS_.id) + ': ' + str(ex))
             self.close()
@@ -62,7 +62,7 @@ class ListenerThread(NetworkThread):
 
         if self.data_:
             self.log_.v('received: ' + self.data_)
-#            self.callback_(self.data_)
+            self.callback_(self.data_)
             self.data_ = ''
 
     def receivedAllData(self):

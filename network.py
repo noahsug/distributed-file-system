@@ -7,7 +7,7 @@ from listener_thread import ListenerThread
 from sender_thread import SenderThread
 from base import Base
 from file_system import FileSystem
-
+import work
 import dfs_socket
 
 class Network(Base):
@@ -47,6 +47,7 @@ class Network(Base):
         pass
 
     def fileAdded(self, fileName):
+        # TODO for testing purposes
         self.sender_.addWork('123456789'*5 + dfs_socket.DATA_TERMINATOR)
 
     def fileDeleted(self, fileName):
@@ -72,3 +73,6 @@ class Network(Base):
         lt.setConnection(socket)
         lt.start()
         self.sender_.addListener(lt)
+
+#        w = work.Work(work.GIVE_HANDSHAKE, self.dfs_, lt.connDFS_, )
+#        self.sender_.addWork(w)
