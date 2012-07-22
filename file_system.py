@@ -5,12 +5,19 @@
 from base import Base
 from physical_view import PhysicalView
 from logical_view import LogicalView
+import serializer
 
 class FileSystem(Base):
     def __init__(self, dfs):
         Base.__init__(self, dfs)
         self.physical_ = PhysicalView(dfs)
         self.logical_ = LogicalView(dfs)
+
+    ##
+    # Public API
+    ##
+    def loadFromState(self, state):
+        self.logical_ = state
 
     def delete(self, fileName):
         pass
@@ -37,6 +44,22 @@ class FileSystem(Base):
     def gotChunk(self, fileName, chunk):
         pass
 
+    def gotEdit(self, fileName, edit):
+        pass
+
     def deleteLocalCopy(self, fileName):
         # delete only from storage, not file_state
         pass
+
+    def serialize(self):
+        return serializer.serialize(self.logical_)
+
+    def writeState(self, serializedState):
+        self.physical_.writeState(serializedState)
+
+    def readState(self, serializedState):
+        pass
+
+    ##
+    # Private methods
+    ##

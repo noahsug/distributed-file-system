@@ -17,6 +17,9 @@ class Network(Base):
     ##
     # Public API
     ##
+    def loadFromState(self, state):
+        pass
+
     def connect(self):
         self.log_.v('connect')
         self.newPeerListener_ = NewPeerListener(self.newPeerConnected, self.dfs_)
@@ -57,6 +60,9 @@ class Network(Base):
     def update(self):
         #poll other peers to get up to date file status
         pass
+
+    def serialize(self):
+        return ''
 
     ##
     # Private methods
