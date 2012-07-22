@@ -3,9 +3,11 @@
 ##
 import socket
 
-socket.setdefaulttimeout(2)
-
+CHUNK_SIZE = 65536
+DATA_END = '\$%\#enndofdata\$%\#'
 timeout = socket.timeout
+
+socket.setdefaulttimeout(2)
 
 class DFSSocket(socket.socket):
     def __init__(self):

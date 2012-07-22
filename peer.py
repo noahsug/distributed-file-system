@@ -25,7 +25,7 @@ class Peer(Base):
         pass
 
     def write(self, fileName, buf, offset, bufsize):
-        pass
+        self.network_.fileAdded(fileName)
 
     def delete(self, fileName):
         pass
