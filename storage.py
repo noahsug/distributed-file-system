@@ -3,16 +3,22 @@ import os.path
 import dfs_socket
 from base import Base
 from lock import Lock
+from file import File
+from file_state import FileState
 
 class Storage(Base):
+    
     shareFolderPath = os.path.expanduser("~/Share/")
 
     def __init__(self, dfs):
         Base.__init__(self, dfs)
         self.lock_ = Lock(dfs)
+        self.dfs = dfs
+        self.file_state = FileState(self.dfs_)
+        self.fileList = {}
 
-        if not os.path.isdir(shareFolderPath):
-            os.mkdir(shareFolderPath)
+        if not os.path.isdir(Storage.shareFolderPath):
+            os.mkdir(Storage.shareFolderPath)
 
         if not os.path.isdir(self.getPath()):
             os.mkdir(self.getPath())
@@ -24,8 +30,8 @@ class Storage(Base):
         self.lock_.release()
 
     def getPath(self):
-        dirName = "peer" + dfs.id
-        return shareFolderPath + dirName + "/"
+        dirName = "peer" + self.dfs.id
+        return Storage.shareFolderPath + dirName + "/"
 
     def addEmptyFile(self, fileName, size):
         self.acquire()
@@ -56,8 +62,8 @@ class Storage(Base):
             f = open(os.path.expanduser(fileName), 'r')
             text = f.read()
             f.close()
-        except Exception, ex:
-            #DB('DEBUG: failed to readFileNoLock # ' + str(ex))
+        except Exception, _ex:
+            #DB('DEBUG: failed to readFileNoLock # ' + str(_ex))
             return ''
         return text
 
@@ -104,7 +110,31 @@ class Storage(Base):
                     fileList.append(localFilePath)
         self.release()
         return fileList
+    
+    def addFile(self, fileName, numChunks):
+        self.acquire()
+        f = File(fileName, numChunks, self.dfs_.id)
+        self.fileList[fileName] = f
+        self.release()
+    
+    def deleteFile(self, fileName):
+        self.acquire()
+        del self.fileList[fileName]
+        if(os.path.isdir(fileName)):
+            os.removedirs(fileName)
+            for key in self.fileList.iterkeys():
+                if fileName in key:
+                    del self.fileList[key]
+        elif(os.path.isfile(fileName)):
+            os.remove(fileName)
+        self.release()
 
+    def editMade(self, fileName, editor='self'):
+        pass
+
+    def hasConflict(self, fileName, numEdits):
+        pass
+    
     def serializeStateToDisk(self):
         pass
 
