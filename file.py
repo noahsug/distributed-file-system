@@ -4,6 +4,8 @@
 # - For each file, a count of how many global edits have accumulated on the file.
 ##
 
+from storage import Storage
+
 class File:
     
     def __init__(self, fileName, filePath, numberChunks):
@@ -12,6 +14,7 @@ class File:
         self.numChunks = numberChunks
         self.chunks_owned = [False] * numberChunks
         self.numEdits = 0
+        self.lastEdited = "peer" + Storage.port
         
     def gotChunk(self, chunk_index):
         self.chunks_owned[chunk_index] = True
