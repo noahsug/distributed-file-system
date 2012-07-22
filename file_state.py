@@ -5,7 +5,21 @@
 ##
 
 from lock import Lock
+from storage import Storage
+from file import File
+import os.path
 
 class FileState:
+
     def __init__(self):
         self.lock_ = Lock('FileState')
+        self.fileList = []
+    
+    def addFile(self, filePath):
+        if(os.path.isfile(filePath)):
+            f = File(os.path.basename(filePath), filePath, Storage.getNumChunks(filePath))
+            self.fileList.append(f);
+
+        
+
+            
