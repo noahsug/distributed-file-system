@@ -13,11 +13,11 @@ class ListenerThread(NetworkThread):
     def __init__(self, dfs, callback):
         NetworkThread.__init__(self, dfs)
         self.callback_ = callback
+        self.connDFS_ = dfs_state.NullDFS
         self.data_ = ''
 
     def connect(self, dfs):
         self.connDFS_ = dfs
-
         self.socket_ = dfs_socket.DFSSocket()
         try:
             self.socket_.connect((self.connDFS_.addr, self.connDFS_.port))
@@ -28,7 +28,6 @@ class ListenerThread(NetworkThread):
         return err.OK
 
     def setConnection(self, conn):
-        self.connDFS_ = dfs_state.NullDFS
         self.socket_ = conn
 
     def sendData(self, data):
@@ -45,7 +44,7 @@ class ListenerThread(NetworkThread):
     def doWork(self):
         while not self.receivedAllData():
             try:
-                data = self.socket_.recv(dfs_socket.CHUNK_SIZE)
+                data = self.socket_.recv(4096)
             except dfs_socket.timeout:
                 self.data_ = ''
                 return
@@ -59,17 +58,18 @@ class ListenerThread(NetworkThread):
                 self.close()
                 return
 
-            self.data_ = self.socket_.recv(10)
+            self.data_ += data
 
-            if self.data_:
-                self.log_.v('received: ' + data)
-                self.callback_(data)
+        if self.data_:
+            self.log_.v('received: ' + self.data_)
+#            self.callback_(self.data_)
+            self.data_ = ''
 
     def receivedAllData(self):
         terminatorLen = len(dfs_socket.DATA_TERMINATOR)
         if len(self.data_) < terminatorLen:
             return False
-        return self.data_[:-terminatorLen] == dfs_socket.DATA_TERMINATOR
+        return self.data_[-terminatorLen:] == dfs_socket.DATA_TERMINATOR
 
     def tearDown(self):
         self.socket_.close()

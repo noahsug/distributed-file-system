@@ -39,7 +39,7 @@ class Peer(Base):
     def unpin(self, fileName):
         pass
 
-    # join DFS, connecting to the peer at the given addr and port
+    # join DFS, connecting to the peer at the given addr and port if given
     def join(self, addr, port):
         self.network_.join(DFS(addr, port))
 
@@ -49,7 +49,7 @@ class Peer(Base):
 
     # connect to the internet
     def connect(self):
-        pass
+        self.network_.connect()
 
     # disconnect from the internet
     def disconnect(self):

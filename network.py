@@ -12,9 +12,6 @@ import dfs_socket
 class Network(Base):
     def __init__(self, dfs):
         Base.__init__(self, dfs)
-        self.sender_ = SenderThread(dfs)
-        self.sender_.start()
-        self.connect()
 
     ##
     # Public API
@@ -23,6 +20,8 @@ class Network(Base):
         self.log_.v('connect')
         self.newPeerListener_ = NewPeerListener(self.newPeerConnected, self.dfs_)
         self.newPeerListener_.start()
+        self.sender_ = SenderThread(self.dfs_)
+        self.sender_.start()
 
     def join(self, dfs):
         self.log_.v('join')
