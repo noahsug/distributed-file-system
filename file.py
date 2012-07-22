@@ -4,22 +4,24 @@
 # - For each file, a count of how many global edits have accumulated on the file.
 ##
 
-from storage import Storage
+class File():
 
-class File:
-    
-    def __init__(self, fileName, filePath, numberChunks):
+    def __init__(self, fileName, numChunks, lastEdited):
         self.name = fileName
-        self.path = filePath
-        self.numChunks = numberChunks
-        self.chunks_owned = [False] * numberChunks
-        self.numEdits = 0
-        self.lastEdited = "peer" + Storage.port
-        
-    def gotChunk(self, chunk_index):
-        self.chunks_owned[chunk_index] = True
-    
+        self.numChunksTotal = numChunks
+        self.numChunksOwned = 0
+        self.chunksOwned = [False] * numberChunks
+        self.numEdits = 1
+        self.lastEdited = lastEdited
+
+    def existsLocally(self):
+        return self.numChunksTotal == self.numChunksOwned
+
+    def gotChunk(self, chunkIndex):
+        self.chunksOwned[chunkIndex] = True
+        self.numChunksOwned += 1
+
     def edited(self):
         self.numEdits = self.numEdits + 1
-    
-    
+
+

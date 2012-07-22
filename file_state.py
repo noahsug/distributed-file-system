@@ -4,22 +4,27 @@
 # - For each file, the # of chunks owned and edit history is stored.
 ##
 
-from lock import Lock
-from storage import Storage
-from file import File
 import os.path
 
-class FileState:
+from base import Base
+from lock import Lock
+from file import File
 
-    def __init__(self):
-        self.lock_ = Lock('FileState')
-        self.fileList = []
-    
-    def addFile(self, filePath):
-        if(os.path.isfile(filePath)):
-            f = File(os.path.basename(filePath), filePath, Storage.getNumChunks(filePath))
-            self.fileList.append(f);
+class FileState(Base):
 
-        
+    def __init__(self, dfs):
+        Base.__init__(self, dfs)
+        self.lock_ = Lock(dfs)
+        self.fileList = {}
 
-            
+    def addFile(self, fileName, numChunks):
+        f = File(fileName, numChunks, self.dfs_.id)
+        self.fileList['fileName'] = f
+
+    def editMade(self, fileName, editor='self'):
+        pass
+
+    def hasConflict(self, fileName, numEdits):
+        pass
+
+

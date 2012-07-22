@@ -1,14 +1,18 @@
-import dfs_socket
-from lock import Lock
 import os.path
 
-class Storage:
-    def __init__(self, port):
-        self.port = port
-        self.lock_ = Lock('Storage')
-        dirName = "peer" + str(self.port)
-        if not os.path.isdir(os.path.expanduser("~/Share/")):
-            os.mkdir(os.path.expanduser("~/Share/"))
+import dfs_socket
+from base import Base
+from lock import Lock
+
+class Storage(Base):
+    shareFolderPath = os.path.expanduser("~/Share/")
+
+    def __init__(self, dfs):
+        Base.__init__(self, dfs)
+        self.lock_ = Lock(dfs)
+
+        if not os.path.isdir(shareFolderPath):
+            os.mkdir(shareFolderPath)
 
         if not os.path.isdir(self.getPath()):
             os.mkdir(self.getPath())
@@ -20,8 +24,8 @@ class Storage:
         self.lock_.release()
 
     def getPath(self):
-        dirName = "peer" + str(self.port)
-        return os.path.expanduser("~/Share/" + dirName + "/")
+        dirName = "peer" + dfs.id
+        return shareFolderPath + dirName + "/"
 
     def addEmptyFile(self, fileName, size):
         self.acquire()
@@ -100,9 +104,9 @@ class Storage:
                     fileList.append(localFilePath)
         self.release()
         return fileList
-    
+
     def serializeStateToDisk(self):
         pass
-        
+
     def deserializeStateFromDisk(self):
         pass
