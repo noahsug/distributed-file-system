@@ -5,7 +5,7 @@ import os.path
 class Storage:
     def __init__(self, port):
         self.port = port
-        self.lock_ = Lock(tag='storage')
+        self.lock_ = Lock('Storage')
         dirName = "peer" + str(self.port)
         if not os.path.isdir(os.path.expanduser("~/Share/")):
             os.mkdir(os.path.expanduser("~/Share/"))
