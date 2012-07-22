@@ -45,22 +45,31 @@ class ListenerThread(NetworkThread):
     def doWork(self):
         while not self.receivedAllData():
             try:
-                #            data = self.socket_.recv(dfs_socket.CHUNK_SIZE)
-                self.data_ = self.socket_.recv(10)
+                data = self.socket_.recv(dfs_socket.CHUNK_SIZE)
             except dfs_socket.timeout:
+                self.data_ = ''
                 return
             except Exception, ex:
                 self.log_.w('cannot recv from ' + str(self.connDFS_.id) + ': ' + str(ex))
                 self.close()
                 return
 
-        if self.data_:
-            self.log_.v('received: ' + data)
-#            self.callback_(data)
+            if not data:
+                self.log_.v('connection with ' + str(self.connDFS_.id) + ' was closed')
+                self.close()
+                return
+
+            self.data_ = self.socket_.recv(10)
+
+            if self.data_:
+                self.log_.v('received: ' + data)
+                self.callback_(data)
 
     def receivedAllData(self):
-        return True
-#        len(self.data_) < len(dfs_socket.DATA_END)
+        terminatorLen = len(dfs_socket.DATA_TERMINATOR)
+        if len(self.data_) < terminatorLen:
+            return False
+        return self.data_[:-terminatorLen] == dfs_socket.DATA_TERMINATOR
 
     def tearDown(self):
         self.socket_.close()

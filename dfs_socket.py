@@ -4,7 +4,7 @@
 import socket
 
 CHUNK_SIZE = 65536
-DATA_END = '\$%\#enndofdata\$%\#'
+DATA_TERMINATOR = '\$%\#enndofdata\$%\#'
 timeout = socket.timeout
 
 socket.setdefaulttimeout(2)

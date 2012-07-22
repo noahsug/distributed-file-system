@@ -44,7 +44,7 @@ class Network(Base):
         pass
 
     def fileAdded(self, fileName):
-        self.sender_.addWork('123456789'*5 + dfs_socket.DATA_END)
+        self.sender_.addWork('123456789'*5 + dfs_socket.DATA_TERMINATOR)
 
 
     def fileDeleted(self, fileName):

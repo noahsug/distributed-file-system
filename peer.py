@@ -43,6 +43,14 @@ class Peer(Base):
     def join(self, addr, port):
         self.network_.join(DFS(addr, port))
 
+    # retire from the system
+    def retire(self):
+        pass
+
+    # connect to the internet
+    def connect(self):
+        pass
+
     # disconnect from the internet
     def disconnect(self):
         self.network_.disconnect()

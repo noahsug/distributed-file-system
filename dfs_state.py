@@ -10,4 +10,7 @@ class DFS:
         self.port = port
         self.id = ID(addr, port)
 
+    def init(self, addr, port):
+        self.__init__(addr, port)
+
 NullDFS = DFS()
