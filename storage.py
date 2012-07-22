@@ -100,3 +100,9 @@ class Storage:
                     fileList.append(localFilePath)
         self.release()
         return fileList
+    
+    def serializeStateToDisk(self):
+        pass
+        
+    def deserializeStateFromDisk(self):
+        pass
