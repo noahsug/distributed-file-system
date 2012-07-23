@@ -3,8 +3,6 @@
 # - Stores which files exist in the DFS.
 # - For each file, the # of chunks owned and edit history is stored.
 ##
-import os.path
-
 import serializer
 from base import Base
 from lock import Lock
@@ -34,16 +32,16 @@ class LogicalView(Base):
     def getVersion(self, fileName):
         return self.fileList_[fileName].getVersion()
 
-    def setVersion(self, fileName, version):
-        self.fileList_[fileName].setVersion(version)
+    def setNewVersion(self, fileName, version):
+        self.fileList_[fileName].setNewVersion(version)
 
-    def setNewVersion(self, fileName, numEdits, numChunks, lastEdited):
-        self.fileList_[fileName].setNewVersion(numEdits, numChunks, lastEdited)
+    def setLocalVersion(self, fileName, numEdits, numChunks, lastEdited):
+        self.fileList_[fileName].setLocalVersion(numEdits, numChunks, lastEdited)
 
     def getFileList(self):
         files = []
         for key in self.fileList_.keys():
-            files.append(os.path.basename(key))
+            files.append(key)
         return files
 
     def serialize(self):

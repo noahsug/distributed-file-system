@@ -24,10 +24,11 @@ class File(Base):
         self.chunksOwned[chunkIndex] = True
         self.numChunksOwned += 1
     
-    def setVersion(self, version):
+    def setNewVersion(self, version):
         self.localVersion = version
+        self.latestVersion = version
         
-    def setNewVersion(self, numEdits, numChunks, lastEdited):
+    def setLocalVersion(self, numEdits, numChunks, lastEdited):
         self.localVersion = Version(self.fileName, numEdits, numChunks, lastEdited)
     
     def getVersion(self):

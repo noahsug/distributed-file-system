@@ -3,8 +3,10 @@
 ##
 
 from base import Base
+from version import Version
 from physical_view import PhysicalView
 from logical_view import LogicalView
+import error as err
 
 class FileSystem(Base):
     def __init__(self, dfs):
@@ -36,20 +38,30 @@ class FileSystem(Base):
         self.physical_.deleteFile(fileName)
 
     def isUpToDate(self, fileName):
-        return self.logical_.fileList[fileName].localVersion == self.logical_.fileList[fileName].latestVersion
+        return self.logical_.fileList[fileName].localVersion.equals(self.logical_.fileList[fileName].latestVersion)
+
+    def isNeedUpdate(self, fileName):
+        return self.logical_.fileList[fileName].localVersion.before(self.logical_.fileList[fileName].latestVersion)
 
     def getVersion(self, fileName):
         return self.logical_.getVersion(fileName)
 
-    def setVersion(self, fileName, version):
-        self.logical_.setVersion(fileName, version)
-
     def write(self, fileName, buf, offset, bufsize):
-        if(self.isUpToDate(fileName)): #if up to date, no conflicts
+        if self.isUpToDate(fileName): #if up to date, no conflicts
             self.physical_.write(fileName, buf, offset, bufsize)
-            self.logical_.setNewVersion(fileName, self.getVersion(fileName).numEdits + 1, self.physical_.getNumChunks(fileName), self.dfs_.id)
-        else: #conflicts
-            pass
+            ver = Version(fileName, self.getVersion(fileName).numEdits + 1, self.physical_.getNumChunks(fileName), self.dfs_.id)
+            self.logical_.setNewVersion(fileName, ver)
+            return err.OK
+        elif self.isNeedUpdate(fileName): #local < latest, conflict
+            conflictName = fileName + '.' + self.dfs_.id
+            self.physical_.copyFile(fileName, conflictName)
+            self.physical_.write(conflictName, buf, offset, bufsize)
+            self.add(conflictName, self.physical_.getNumChunks(conflictName))
+            return conflictName
+        else: #latest > local, offline edits
+            self.physical_.write(fileName, buf, offset, bufsize)
+            self.logical_.setLocalVersion(fileName, self.getVersion(fileName).numEdits + 1, self.physical_.getNumChunks(fileName), self.dfs_.id)
+            return err.OK
 
     def writeChunk(self, fileName, chunkNum, data):
         self.physical_.writeChunk(fileName, chunkNum, data)

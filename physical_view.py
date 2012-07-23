@@ -3,6 +3,7 @@
 ##
 
 import os.path
+import shutil
 
 import dfs_socket
 import error as err
@@ -39,11 +40,9 @@ class PhysicalView(Base):
         f.close()
         return status
 
-    ## to do
     def write(self, fileName, buf, offset, bufsize):
         status = err.OK
-        f = open(os.path.join(self.getPath(), fileName), "w")
-
+        f = open(os.path.join(self.getBasePath(), fileName), "w")
         if(offset > self.getFileSize(fileName)):
             f.seek(0, 2)
             f.write(' ' * (offset - self.getFileSize(fileName)))
@@ -89,9 +88,14 @@ class PhysicalView(Base):
         self.lock_.release()
         return int(size / dfs_socket.CHUNK_SIZE) + 1
 
+    def copyFile(self, src, des):
+        self.lock_.acquire()
+        shutil.copyfile(os.path.join(self.getBasePath(), src), os.path.join(self.getBasePath(), des))
+        self.lock_.release()
+
     def deleteFile(self, fileName):
         self.lock_.acquire()
-        os.remove(fileName)
+        os.remove(os.path.join(self.getBasePath(), fileName))
         self.lock_.release()
 
     def writeState(self, serializedState):

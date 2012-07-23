@@ -8,3 +8,9 @@ class Version:
         self.numEdits = numEdits
         self.numChunks = numChunks
         self.lastEdited = lastEdited
+
+    def equals(self, otherVersion):
+        return (self.fileName == otherVersion.fileName and self.numEdits == otherVersion.numEdits and self.numChunks == otherVersion.numChunks and self.lastEdited == otherVersion.lastEdited)
+    
+    def before(self, otherVersion):
+        return (self.fileName == otherVersion.fileName and self.numEdits < otherVersion.numEdits)

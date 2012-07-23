@@ -7,6 +7,7 @@ from listener_thread import ListenerThread
 from sender_thread import SenderThread
 from base import Base
 from file_system import FileSystem
+import error as err
 import work
 import dfs_socket
 import serializer
@@ -45,7 +46,7 @@ class Network(Base):
 
     def getFile(self, fileName, chunksOwned):
         # ask each peer for a random file chunk until the file is fully retrieved
-        pass
+        return err.OK
 
     def fileAdded(self, fileName):
         # TODO for testing purposes
