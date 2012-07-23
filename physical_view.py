@@ -83,8 +83,7 @@ class PhysicalView(Base):
 
     def getNumChunks(self, fileName):
         self.lock_.acquire()
-        filePath = os.path.join(self.getBasePath(), fileName)
-        size = self.getFileSize(filePath, fileName)
+        size = self.getFileSize(fileName)
         self.lock_.release()
         return int(size / dfs_socket.CHUNK_SIZE) + 1
 
@@ -129,6 +128,9 @@ class PhysicalView(Base):
         if not os.path.isdir(self.getBasePath()):
             os.mkdir(self.getBasePath())
 
+    def exists(self, fileName):
+        return os.path.exists(os.path.join(self.getBasePath(), fileName))
+
     def getBasePath(self):
         dirName = "peer_" + str(self.dfs_.id)
         return shareFolderPath + dirName + "/"
@@ -138,12 +140,12 @@ class PhysicalView(Base):
         path = os.path.join(self.getBasePath(), fileName)
         if not os.path.isfile(path):
             w = open(path, "w")
-            w.write(' ' * size * dfs_socket.CHUNK_SIZE) # fill the file with empty space
+            w.write(' ' * size) # fill the file with empty space
             w.close()
         self.lock_.release()
 
-    def getFileSize(self, filePath):
-        return os.path.getsize(filePath)
+    def getFileSize(self, fileName):
+        return os.path.getsize(os.path.join(self.getBasePath(), fileName))
 #===============================================================================
 #    def copyFileLocally(self, filePath):
 #        self.lock_.acquire()

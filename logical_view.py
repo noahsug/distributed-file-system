@@ -15,9 +15,9 @@ class LogicalView(Base):
         self.lock_ = Lock(dfs)
         self.fileList_ = {}
 
-    def add(self, fileName, numChunks):
+    def add(self, fileName, fileSize, numChunks):
         self.lock_.acquire()
-        f = File(fileName, numChunks, self.dfs_.id)
+        f = File(fileName, 1, numChunks, fileSize, self.dfs_.id)
         self.fileList_[fileName] = f
         self.lock_.release()
 
@@ -35,13 +35,13 @@ class LogicalView(Base):
     def setNewVersion(self, fileName, version):
         self.fileList_[fileName].setNewVersion(version)
 
-    def setLocalVersion(self, fileName, numEdits, numChunks, lastEdited):
-        self.fileList_[fileName].setLocalVersion(numEdits, numChunks, lastEdited)
+    def setLocalVersion(self, fileName, numEdits, numChunks, fileSize, lastEdited):
+        self.fileList_[fileName].setLocalVersion(numEdits, numChunks, fileSize, lastEdited)
 
     def getFileList(self):
         files = []
-        for key in self.fileList_.keys():
-            files.append(key)
+        for value in self.fileList_.values():
+            files.append(value)
         return files
 
     def serialize(self):

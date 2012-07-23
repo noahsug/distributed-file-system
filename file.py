@@ -9,9 +9,9 @@ from version import Version
 
 class File(Base):
 
-    def __init__(self, fileName, numChunks, lastEdited):
+    def __init__(self, fileName, numEdits, numChunks, fileSize, lastEdited):
         self.fileName = fileName
-        self.localVersion = Version(fileName, 1, numChunks, lastEdited)
+        self.localVersion = Version(fileName, numEdits, numChunks, fileSize, lastEdited)
         self.latestVersion = self.localVersion
 
         self.numChunksOwned = 0
@@ -28,8 +28,8 @@ class File(Base):
         self.localVersion = version
         self.latestVersion = version
         
-    def setLocalVersion(self, numEdits, numChunks, lastEdited):
-        self.localVersion = Version(self.fileName, numEdits, numChunks, lastEdited)
+    def setLocalVersion(self, numEdits, numChunks, fileSize, lastEdited):
+        self.localVersion = Version(self.fileName, numEdits, numChunks, fileSize, lastEdited)
     
     def getVersion(self):
         return self.localVersion

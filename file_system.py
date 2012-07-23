@@ -28,7 +28,7 @@ class FileSystem(Base):
         return self.physical_.read(fileName, buf, offset, bufsize)
 
     def add(self, fileName, numChunks):
-        self.logical_.add(fileName, numChunks)
+        self.logical_.add(fileName, self.physical_.getFileSize(fileName), numChunks)
 
     def delete(self, fileName):
         self.logical_.delete(fileName)
@@ -47,12 +47,13 @@ class FileSystem(Base):
         return self.logical_.getVersion(fileName)
 
     def write(self, fileName, buf, offset, bufsize):
+
         if self.isUpToDate(fileName): #if up to date, no conflicts
             self.physical_.write(fileName, buf, offset, bufsize)
-            ver = Version(fileName, self.getVersion(fileName).numEdits + 1, self.physical_.getNumChunks(fileName), self.dfs_.id)
+            ver = Version(fileName, self.getVersion(fileName).numEdits + 1, self.physical_.getNumChunks(fileName), self.physical_.getFileSize(fileName), self.dfs_.id)
             self.logical_.setNewVersion(fileName, ver)
             return err.OK
-        elif self.isNeedUpdate(fileName): #local < latest, conflict
+        elif self.isNeedUpdate(fileName): #local < latest, conflict (update failed)
             conflictName = fileName + '.' + self.dfs_.id
             self.physical_.copyFile(fileName, conflictName)
             self.physical_.write(conflictName, buf, offset, bufsize)
@@ -60,10 +61,14 @@ class FileSystem(Base):
             return conflictName
         else: #latest > local, offline edits
             self.physical_.write(fileName, buf, offset, bufsize)
-            self.logical_.setLocalVersion(fileName, self.getVersion(fileName).numEdits + 1, self.physical_.getNumChunks(fileName), self.dfs_.id)
+            self.logical_.setLocalVersion(fileName, self.getVersion(fileName).numEdits + 1, self.physical_.getNumChunks(fileName), self.physical_.getFileSize(fileName), self.dfs_.id)
             return err.OK
 
     def writeChunk(self, fileName, chunkNum, data):
+        
+        if not self.physical_.exists(fileName):
+            self.physical_.fillEmptyFile(fileName, self.logical_.fileList_[fileName].latestVersion.fileSize)
+        
         self.physical_.writeChunk(fileName, chunkNum, data)
         self.logical_.fileList[fileName].receiveChunk(chunkNum)
 
