@@ -63,11 +63,13 @@ class Peer(Base):
     # connect to the internet
     def connect(self):
         self.network_.connect()
+        self.dfs_.online = True
         return err.OK
 
     # disconnect from the internet
     def disconnect(self):
         self.network_.disconnect()
+        self.dfs_.online = False
         return err.OK
 
     def query(self, status):

@@ -9,6 +9,7 @@ class DFS:
         self.addr = addr
         self.port = port
         self.id = ID(addr, port)
+        self.online = False
 
     def init(self, addr, port):
         self.__init__(addr, port)
