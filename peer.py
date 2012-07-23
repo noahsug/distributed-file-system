@@ -17,6 +17,12 @@ class Peer(Base):
     ##
     # Public API
     ##
+    def open(self, fileName, op):
+        pass
+
+    def close(self, fileName):
+        pass
+
     def read(self, fileName, buf, offset, bufsize):
         status = self.updateFile(fileName)
         if status >= 0:
