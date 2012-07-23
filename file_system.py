@@ -26,10 +26,10 @@ class FileSystem(Base):
     def delete(self, fileName):
         self.logical_.delete(fileName)
         self.physical_.deleteFile(fileName)
-    
+
     def deleteLocalCopy(self, fileName):
         self.physical_.deleteFile(fileName)
-    
+
     def write(self, fileName, buf, offset, bufsize):
         pass
 
@@ -37,6 +37,9 @@ class FileSystem(Base):
         return True
 
     def list(self):
+        pass
+
+    def getVersion(self):
         pass
 
     def readIntoBuffer(self, fileName, buf, offset, bufsize):
@@ -57,7 +60,7 @@ class FileSystem(Base):
 
     def readState(self, serializedState):
         pass
-    
+
     def editMade(self, fileName, editor='self'):
         pass
 
@@ -68,7 +71,7 @@ class FileSystem(Base):
     ##
     # Private methods
     ##
-    
+
     def exists(self, fileName):
         return self.logical_.exists(fileName)
 
