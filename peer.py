@@ -47,6 +47,8 @@ class Peer(Base):
 
     # mark the file as stable
     def stable(self, fileName):
+        self.fileSystem_.physical_.copyFile(fileName, fileName + ".stable")
+        self.fileSystem_.add(fileName + ".stable", self.fileSystem_.physical_.getNumChunks(fileName + ".stable"))
         pass
 
     # save the most recent version of the file locally
