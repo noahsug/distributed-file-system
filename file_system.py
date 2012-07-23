@@ -24,6 +24,12 @@ class FileSystem(Base):
     def list(self):
         return self.logical_.getFileList()
 
+    def canRead(self, fileName):
+        return self.logical_.fileList_[fileName].state is "" or self.logical_.fileList_[fileName].state is "r"
+    
+    def canWrite(self, fileName):
+        return self.logical_.fileList_[fileName].state is not "w"
+
     def readIntoBuffer(self, fileName, buf, offset, bufsize):
         return self.physical_.read(fileName, buf, offset, bufsize)
 

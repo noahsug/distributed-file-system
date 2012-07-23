@@ -20,20 +20,35 @@ class Peer(Base):
     # Public API
     ##
     def open(self, fileName, op):
-        pass
+        status = self.updateFile(fileName)
+        if op is "r" and self.fileSystem_.canRead(fileName):
+            self.fileSystem_.logical_.fileList_[fileName].state = "r"
+        elif op is "w" and self.fileSystem_.canWrite(fileName):
+            self.fileSystem_.logical_.fileList_[fileName].state = "w"
+        else:
+            return err.CannotOpenFile
+        return err.OK
 
     def close(self, fileName):
-        pass
+        if self.fileSystem_.logical_.fileList_[fileName].state is "":
+            return err.FileNotOpen
+        else: 
+            self.fileSystem_.logical_.fileList_[fileName].state = ""
+        return err.OK
 
     def read(self, fileName, buf, offset, bufsize):
-        status = self.updateFile(fileName)
-        if status >= 0:
+        if self.fileSystem_.logical_.fileList_[fileName].state is not "":
             status = self.fileSystem_.readIntoBuffer(fileName, buf, offset, bufsize)
+        else:
+            return err.FileNotOpen
         return status
 
     def write(self, fileName, buf, offset, bufsize):
-        self.fileSystem_.write(fileName, buf, offset, bufsize)
-        version = self.fileSystem_.getVersion(fileName)
+        if self.fileSystem_.logical_.fileList_[fileName].state is "w":
+            self.fileSystem_.write(fileName, buf, offset, bufsize)
+            version = self.fileSystem_.getVersion(fileName)
+        else:
+            return err.FileNotOpenForWrite
         return err.OK
 
     def delete(self, fileName):

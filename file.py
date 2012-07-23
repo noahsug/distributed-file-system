@@ -16,6 +16,7 @@ class File(Base):
 
         self.numChunksOwned = 0
         self.chunksOwned = [False] * numChunks
+        self.state = ""
 
     def existsLocally(self):
         return self.numChunksTotal == self.numChunksOwned
