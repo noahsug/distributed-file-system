@@ -55,9 +55,11 @@ class FileSystem(Base):
         self.physical_.writeChunk(fileName, chunkNum, data)
         self.logical_.fileList[fileName].receiveChunk(chunkNum)
 
-    def loadState(self, serializedState):
-        pass
+    # read serialized state from disk
+    def readState(self):
+        return self.physical_.readState()
 
+    # write serialized state to disk
     def writeState(self, serializedState):
         self.physical_.writeState(serializedState)
 

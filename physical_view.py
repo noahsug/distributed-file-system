@@ -98,11 +98,22 @@ class PhysicalView(Base):
         path = os.path.join(self.getBasePath(), saveStateName)
         self.lock_.acquire()
         f = open(path, 'w')
-#        f.write(serializedState)
-        f.write('testing 1 2 3')
+        f.write(serializedState)
         f.close()
         self.log_.v('writing state to disk at ' + path)
         self.lock_.release()
+
+    def readState(self):
+        path = os.path.join(self.getBasePath(), saveStateName)
+        if not os.path.exists(path):
+            return None
+        self.lock_.acquire()
+        f = open(path, 'r')
+        state = f.read()
+        f.close()
+        self.log_.v('loaded state from disk')
+        self.lock_.release()
+        return state
 
     ##
     # Private methods

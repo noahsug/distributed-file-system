@@ -7,12 +7,14 @@ from file_system import FileSystem
 import error as err
 from dfs_state import DFS
 from base import Base
+import serializer
 
 class Peer(Base):
     def __init__(self, addr, port):
         Base.__init__(self, DFS(addr, port))
         self.network_ = Network(self.dfs_)
         self.fileSystem_ = FileSystem(self.dfs_)
+        self.loadState()
 
     ##
     # Public API
@@ -85,12 +87,26 @@ class Peer(Base):
     def exit(self):
         fs = self.fileSystem_.serialize()
         nw = self.network_.serialize()
-        self.fileSystem_.writeState((fs, nw))
+        state = (fs, nw)
+        s = serializer.serialize(state)
+        self.fileSystem_.writeState(s)
         exit()
 
     ##
     # Private functions
     ##
+    def loadState(self):
+        state = self.fileSystem_.readState()
+        if state:
+            try:
+                fs, nw = serializer.deserialize(state)
+            except Exception, ex:
+                self.log_.e('found state, but failed to deserialize: ' + str(ex))
+                return
+            self.fileSystem_.loadFromState(fs)
+            self.network_.loadFromState(nw)
+            self.log_.v('successfully loaded states')
+
     def updateFile(self, fileName):
         status = err.OK
         if not self.fileSystem_.isUpToDate(fileName):
