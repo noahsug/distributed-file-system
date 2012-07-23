@@ -5,25 +5,32 @@
 ##
 
 from base import Base
+from version import Version
 
 class File(Base):
 
     def __init__(self, fileName, numChunks, lastEdited):
-        self.name = fileName
-        self.numChunksTotal = numChunks
+        self.fileName = fileName
+        self.localVersion = Version(fileName, 1, numChunks, lastEdited)
+        self.latestVersion = self.localVersion
+
         self.numChunksOwned = 0
         self.chunksOwned = [False] * numChunks
-        self.numEdits = 1
-        self.lastEdited = lastEdited
 
     def existsLocally(self):
         return self.numChunksTotal == self.numChunksOwned
 
-    def gotChunk(self, chunkIndex):
+    def receiveChunk(self, chunkIndex):
         self.chunksOwned[chunkIndex] = True
         self.numChunksOwned += 1
-
-    def edited(self):
-        self.numEdits = self.numEdits + 1
+    
+    def setVersion(self, version):
+        self.localVersion = version
+        
+    def setNewVersion(self, numEdits, numChunks, lastEdited):
+        self.localVersion = Version(self.fileName, numEdits, numChunks, lastEdited)
+    
+    def getVersion(self):
+        return self.localVersion
 
 

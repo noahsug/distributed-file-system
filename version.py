@@ -3,8 +3,8 @@
 ##
 
 class Version:
-    def __init__(self):
-        self.fileName = ''
-        self.lastEdited = ''
-        self.numEdits = 1
-        self.numChunks = 0
+    def __init__(self, fileName, numEdits, numChunks, lastEdited):
+        self.fileName = fileName
+        self.numEdits = numEdits
+        self.numChunks = numChunks
+        self.lastEdited = lastEdited

@@ -33,44 +33,43 @@ class FileSystem(Base):
     def deleteLocalCopy(self, fileName):
         self.physical_.deleteFile(fileName)
 
-    def write(self, fileName, buf, offset, bufsize):
-        self.physical_.write(fileName, buf, offset, bufsize)
-        ## increment number of edits
-
     def isUpToDate(self, fileName):
-        return True
+        return self.logical_.fileList[fileName].localVersion == self.logical_.fileList[fileName].latestVersion
 
-    def getVersion(self):
-        
+    def getVersion(self, fileName):
+        return self.logical_.getVersion(fileName)
     
     def setVersion(self, fileName, version):
-        self.logical_.fileList[fileName].
-        pass
+        self.logical_.setVersion(fileName, version)
 
-    def readIntoBuffer(self, fileName, buf, offset, bufsize):
-        self.physical_.readIntoBuffer(fileName, buf, offset, bufsize)
-        return status
-
+    def write(self, fileName, buf, offset, bufsize):
+        if(self.isUpToDate(fileName)):
+            self.physical_.write(fileName, buf, offset, bufsize)
+            self.logical_.setNewVersion(fileName, self.getVersion(fileName).numEdits + 1, self.physical_.getNumChunks(fileName), self.dfs_.id)
+        else:
+            pass
+            
     def writeChunk(self, fileName, chunkNum, data):
         self.physical_.writeChunk(fileName, chunkNum, data)
-        self.logical_.fileList[fileName].gotChunk(chunkNum)
+        self.logical_.fileList[fileName].receiveChunk(chunkNum)
 
+    def readIntoBuffer(self, fileName, buf, offset, bufsize):
+        return self.physical_.readIntoBuffer(fileName, buf, offset, bufsize)
 
     def serialize(self):
         return serializer.serialize(self.logical_)
 
-    def writeState(self, serializedState):
-        self.physical_.writeState(serializedState)
-
     def readState(self, serializedState):
         pass
+
+    def writeState(self, serializedState):
+        self.physical_.writeState(serializedState)
 
     def editMade(self, fileName, editor='self'):
         pass
 
     def hasConflict(self, fileName, numEdits):
         pass
-
 
     ##
     # Private methods

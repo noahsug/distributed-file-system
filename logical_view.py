@@ -30,6 +30,15 @@ class LogicalView(Base):
     def exists(self, fileName):
         return (fileName in self.fileList)
     
+    def getVersion(self, fileName):
+        return self.fileList[fileName].getVersion()
+    
+    def setVersion(self, fileName, version):
+        self.fileList[fileName].setVersion(version)
+        
+    def setNewVersion(self, fileName, numEdits, numChunks, lastEdited):
+        self.fileList[fileName].setNewVersion(numEdits, numChunks, lastEdited)
+    
     def getFileList(self):
         files = []
         for key in self.fileList.keys():
