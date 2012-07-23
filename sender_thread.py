@@ -11,8 +11,9 @@ import dfs_state
 import work
 
 class SenderThread(NetworkThread):
-    def __init__(self, dfs):
+    def __init__(self, dfs, fileSystem):
         NetworkThread.__init__(self, dfs)
+        self.fileSystem_ = fileSystem
         self.listeners_ = []
         self.listenerLock_ = Lock(dfs)
         self.workQueue_ = []

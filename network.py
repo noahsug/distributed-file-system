@@ -26,7 +26,7 @@ class Network(Base):
         self.log_.v('connect')
         self.newPeerListener_ = NewPeerListener(self.newPeerConnected, self.dfs_)
         self.newPeerListener_.start()
-        self.sender_ = SenderThread(self.dfs_)
+        self.sender_ = SenderThread(self.dfs_, self.fileSystem_)
         self.sender_.start()
 
     def join(self, dfs):
