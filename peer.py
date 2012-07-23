@@ -24,11 +24,8 @@ class Peer(Base):
         return status
 
     def write(self, fileName, buf, offset, bufsize):
-        if self.fileSystem_.exists(fileName):
-            self.fileSystem_.writeIntoBuffer(fileName, buf, offset, bufsize)
-        else:
-            self.fileSystem_.add(fileName, buf, offset, bufsize)
-            self.network_.fileAdded(fileName)
+        self.fileSystem_.write(fileName, buf, offset, bufsize)
+        version = self.fileSystem_.getVersion(fileName)
         return err.OK
 
     def delete(self, fileName):
