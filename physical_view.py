@@ -43,11 +43,11 @@ class PhysicalView(Base):
     def write(self, fileName, buf, offset, bufsize):
         status = err.OK
         f = open(os.path.join(self.getPath(), fileName), "w")
-        
+
         if(offset > self.getFileSize(fileName)):
             f.seek(0, 2)
             f.write(' ' * (offset - self.getFileSize(fileName)))
-        
+
         f.seek(offset, 0)
         try:
             buf.tofile(f, bufsize)
@@ -101,6 +101,7 @@ class PhysicalView(Base):
 #        f.write(serializedState)
         f.write('testing 1 2 3')
         f.close()
+        self.log_.v('writing state to disk at ' + path)
         self.lock_.release()
 
     ##
@@ -114,7 +115,7 @@ class PhysicalView(Base):
             os.mkdir(self.getBasePath())
 
     def getBasePath(self):
-        dirName = "peer" + str(self.dfs_.id)
+        dirName = "peer_" + str(self.dfs_.id)
         return shareFolderPath + dirName + "/"
 
     def fillEmptyFile(self, fileName, size):
