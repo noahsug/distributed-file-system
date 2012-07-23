@@ -20,7 +20,7 @@ class PhysicalView(Base):
     def read(self, fileName, buf, offset, bufsize):
         # TODO add thread safetly
         status = err.OK
-        f = open(fileName, "r")
+        f = open(os.path.join(self.getPath(), fileName), "r")
         f.seek(offset)
         try:
             buf.fromfile(f, bufsize)
@@ -33,9 +33,9 @@ class PhysicalView(Base):
     ## to do
     def write(self, fileName, buf, offset, bufsize):
         status = err.OK
-        f = open(fileName, "w")
+        f = open(os.path.join(self.getPath(), fileName), "w")
         
-        if(offset + bufsize > self.getFileSize(os.path.join(self.getPath(), fileName)):
+        if(offset + bufsize > self.getFileSize(os.path.join(self.getPath(), fileName))):
            # increment file size to
            pass
         
