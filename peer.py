@@ -7,12 +7,13 @@ import error as err
 from dfs_state import DFS
 from base import Base
 import serializer
+from file_system import FileSystem
 
 class Peer(Base):
     def __init__(self, addr, port):
         Base.__init__(self, DFS(addr, port))
-        self.network_ = Network(self.dfs_)
         self.fileSystem_ = FileSystem(self.dfs_)
+        self.network_ = Network(self.dfs_, self.fileSystem_)
         self.loadState()
 
     ##

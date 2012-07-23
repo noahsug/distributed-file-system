@@ -42,7 +42,7 @@ class SenderThread(NetworkThread):
 
     def processWork(self):
         self.log_.v('processing work of type ' + self.work_.type)
-        if self.work_.source.id == self.dfs.id:
+        if self.work_.source.id == self.dfs_.id:
             self.sendWork()
         elif self.work_.type == work.HANDSHAKE:
             self.handleHandshake()

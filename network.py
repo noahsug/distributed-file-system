@@ -6,7 +6,6 @@ from  new_peer_listener import NewPeerListener
 from listener_thread import ListenerThread
 from sender_thread import SenderThread
 from base import Base
-from file_system import FileSystem
 import error as err
 import work
 import dfs_socket
@@ -79,5 +78,5 @@ class Network(Base):
         self.sender_.addListener(lt)
 
         data = (self.fileSystem_.serialize(), self.serialize())
-        w = work.Work(work.GIVE_HANDSHAKE, self.dfs_, lt.connDFS_, data)
+        w = work.Work(work.HANDSHAKE, self.dfs_, lt, data)
         self.sender_.addWork(w)
