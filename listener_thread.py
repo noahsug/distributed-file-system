@@ -8,6 +8,7 @@ from network_thread import NetworkThread
 import dfs_state
 import dfs_socket
 import error as err
+import serializer
 
 class ListenerThread(NetworkThread):
     def __init__(self, dfs, callback):
@@ -36,11 +37,12 @@ class ListenerThread(NetworkThread):
     def getConnDFS(self):
         return self.connDFS_
 
-    def sendData(self, data):
+    def sendWork(self, work):
         if not self.active_:
             return err.NotActive
         try:
-            self.socket_.sendall(data + dfs_socket.DATA_TERMINATOR)
+            data = self.package(work)
+            self.socket_.sendall(data)
         except Exception, ex:
             self.log_.w('cannot send data to ' + str(self.connDFS_.id) + ': ' + str(ex))
             self.close()
@@ -68,7 +70,9 @@ class ListenerThread(NetworkThread):
 
         if self.data_:
             self.log_.v('received: ' + self.data_)
-            self.callback_(self.data_)
+            work = self.unpackage(self.data_)
+            if work:
+                self.callback_(work)
             self.data_ = ''
 
     def receivedAllData(self):
@@ -77,5 +81,21 @@ class ListenerThread(NetworkThread):
             return False
         return self.data_[-terminatorLen:] == dfs_socket.DATA_TERMINATOR
 
+    def package(self, work):
+        data = serializer.serialize(work)
+        data += dfs_socket.DATA_TERMINATOR
+        return data
+
+    def unpackage(self, data):
+        terminatorLen = len(dfs_socket.DATA_TERMINATOR)
+        data = data[-terminatorLen:]
+        try:
+            work = serializer.deserialize(data)
+        except Exception, ex:
+            self.log_.e('failed to deserialize work')
+            return None
+        return work
+
     def tearDown(self):
         self.socket_.close()
+

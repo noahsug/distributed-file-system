@@ -6,7 +6,6 @@ import time
 
 from lock import Lock
 from network_thread import NetworkThread
-import serializer
 import dfs_socket
 import dfs_state
 import work
@@ -43,27 +42,27 @@ class SenderThread(NetworkThread):
 
     def processWork(self):
         self.log_.v('processing work of type ' + self.work_.type)
-        if self.work_.type == work.HANDSHAKE:
-            if self.work_.source.id == self.dfs.id:
-                self.handleGiveHandshake()
+        if self.work_.source.id == self.dfs.id:
+            self.sendWork()
+        elif self.work_.type == work.HANDSHAKE:
+            self.handleHandshake()
 
-    def handleGiveHandshake(self):
-        lt = self.work_.data
-        self.work_.type = work.ACCEPT_HANDSHAKE
-        self.work_.data = self.dfs_
-        self.sendWork(lt)
-
-    def sendWork(self, lt):
-        data = serializor.serialize(self.work_)
-        status = lt.sendData(data)
+    def sendWork(self):
+        lt = self.work_.dest
+        status = lt.sendWork(self.work_)
         if status < 0:
             self.listenerLock_.acquire()
             self.listeners_.remove(lt) # other peer has disconnected
             self.listenerLock_.release()
 
+    def handleHandshake(self):
+        self.log_.v('received handshake')
+
     def getPeers(self):
         peers = []
+        self.listenerLock_.acquire()
         for listener in self.listeners_:
             if listener.hasConnDFS():
                 peers.append(listener.getConnDFS())
+        self.listenerLock_.release()
         return peers

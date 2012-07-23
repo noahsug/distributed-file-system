@@ -13,8 +13,9 @@ import dfs_socket
 import serializer
 
 class Network(Base):
-    def __init__(self, dfs):
+    def __init__(self, dfs, fileSystem):
         Base.__init__(self, dfs)
+        self.fileSystem_ = fileSystem
 
     ##
     # Public API
@@ -77,6 +78,6 @@ class Network(Base):
         lt.start()
         self.sender_.addListener(lt)
 
-        data = (file_system.serialize(), self.serialize())
+        data = (self.fileSystem_.serialize(), self.serialize())
         w = work.Work(work.GIVE_HANDSHAKE, self.dfs_, lt.connDFS_, data)
         self.sender_.addWork(w)
