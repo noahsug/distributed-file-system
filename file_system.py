@@ -98,8 +98,8 @@ class FileSystem(Base):
     def writeState(self, serializedState):
         self.physical_.writeState(serializedState)
 
-    def serialize(self):
-        return self.logical_.serialize()
+    def getState(self):
+        return self.logical_.getState()
 
     ##
     # Private methods

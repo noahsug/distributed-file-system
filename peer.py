@@ -113,8 +113,8 @@ class Peer(Base):
 
     # exits the program
     def exit(self):
-        fs = self.fileSystem_.serialize()
-        nw = self.network_.serialize()
+        fs = self.fileSystem_.getState()
+        nw = self.network_.getState()
         state = (fs, nw)
         s = serializer.serialize(state)
         self.fileSystem_.writeState(s)

@@ -15,18 +15,21 @@ class Network(Base):
     def __init__(self, dfs, fileSystem):
         Base.__init__(self, dfs)
         self.fileSystem_ = fileSystem
+        self.knownPeers_ = []
 
     ##
     # Public API
     ##
     def loadFromState(self, state):
         pass
+#        self.knownPeers_ = state
 
     def connect(self):
         self.log_.v('connect')
         self.newPeerListener_ = NewPeerListener(self.newPeerConnected, self.dfs_)
         self.newPeerListener_.start()
         self.sender_ = SenderThread(self.dfs_, self.fileSystem_)
+        self.addKnownPeers()
         self.sender_.start()
 
     def join(self, dfs):
@@ -63,9 +66,8 @@ class Network(Base):
         #poll other peers to get up to date file status
         pass
 
-    def serialize(self):
-        peerState = self.sender_.getPeers()
-        return serializer.serialize(peerState)
+    def getState(self):
+        return self.sender_.getPeers()
 
     ##
     # Private methods
@@ -77,6 +79,16 @@ class Network(Base):
         lt.start()
         self.sender_.addListener(lt)
 
-        data = (self.fileSystem_.serialize(), self.serialize())
+        state = (self.fileSystem_.getState(), self.getState())
+        data = serializer.serialize(state)
         w = work.Work(work.HANDSHAKE, self.dfs_, lt, data)
         self.sender_.addWork(w)
+
+    def addKnownPeers(self):
+        for peerDFS in self.knownPeers_:
+            lt = ListenerThread(self.dfs_, self.sender_.addWork)
+            status = lt.connect(peerDFS)
+            if status < 0:
+                self.log_.w('could not connect to known peer ' + str(peerDFS.id))
+            else:
+                self.sender_.addListener(lt)

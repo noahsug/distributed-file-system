@@ -47,8 +47,8 @@ class LogicalView(Base):
             files.append(value)
         return files
 
-    def serialize(self):
-        return serializer.serialize(self.fileList_)
+    def getState(self):
+        return self.fileList_
 
     # update the logical view from the given set of files
     def update(self, files):
