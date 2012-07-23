@@ -3,6 +3,7 @@
 # - Stores which files exist in the DFS.
 # - For each file, the # of chunks owned and edit history is stored.
 ##
+import os.path
 
 from base import Base
 from lock import Lock
@@ -28,3 +29,9 @@ class LogicalView(Base):
         
     def exists(self, fileName):
         return (fileName in self.fileList)
+    
+    def getFileList(self):
+        files = []
+        for key in self.fileList.keys():
+            files.append(os.path.basename(key))
+        return files

@@ -89,6 +89,9 @@ class PhysicalView(Base):
         self.release()
         return data
 
+    def write(self, fileName, buf, offset, bufsize):
+        pass
+
     def writeChunk(self, fileName, chunkNum, data):
         #Assume data is no longer than size CHUNK_SIZE
         self.acquire()

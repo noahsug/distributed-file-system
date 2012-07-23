@@ -20,6 +20,9 @@ class FileSystem(Base):
         self.logical_ = state
         # TODO: do a check to make sure the physical view matches the logical view
 
+    def list(self):
+        return self.logical_.getFileList()
+
     def add(self, fileName, numChunks):
         self.logical_.add(fileName, numChunks)
 
@@ -31,13 +34,11 @@ class FileSystem(Base):
         self.physical_.deleteFile(fileName)
 
     def write(self, fileName, buf, offset, bufsize):
-        pass
+        self.physical_.write(fileName, buf, offset, bufsize)
+        ## increment number of edits
 
     def isUpToDate(self, fileName):
         return True
-
-    def list(self):
-        pass
 
     def getVersion(self):
         pass
@@ -46,7 +47,8 @@ class FileSystem(Base):
         self.physical_.readIntoBuffer(fileName, buf, offset, bufsize)
         return status
 
-    def gotChunk(self, fileName, chunk):
+    def writeChunk(self, fileName, chunk):
+        
         pass
 
     def gotEdit(self, fileName, edit):
