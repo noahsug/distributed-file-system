@@ -41,18 +41,20 @@ class FileSystem(Base):
         return True
 
     def getVersion(self):
+        
+    
+    def setVersion(self, fileName, version):
+        self.logical_.fileList[fileName].
         pass
 
     def readIntoBuffer(self, fileName, buf, offset, bufsize):
         self.physical_.readIntoBuffer(fileName, buf, offset, bufsize)
         return status
 
-    def writeChunk(self, fileName, chunk):
-        
-        pass
+    def writeChunk(self, fileName, chunkNum, data):
+        self.physical_.writeChunk(fileName, chunkNum, data)
+        self.logical_.fileList[fileName].gotChunk(chunkNum)
 
-    def gotEdit(self, fileName, edit):
-        pass
 
     def serialize(self):
         return serializer.serialize(self.logical_)
