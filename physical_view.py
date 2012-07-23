@@ -85,7 +85,7 @@ class PhysicalView(Base):
     def getNumChunks(self, fileName):
         self.lock_.acquire()
         filePath = os.path.join(self.getBasePath(), fileName)
-        size = self.getFileSize(os.path.join(self.getBasePath(), fileName))
+        size = self.getFileSize(filePath, fileName)
         self.lock_.release()
         return int(size / dfs_socket.CHUNK_SIZE) + 1
 
