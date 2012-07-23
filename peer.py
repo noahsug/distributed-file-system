@@ -88,5 +88,5 @@ class Peer(Base):
     def updateFile(self, fileName):
         status = err.OK
         if not self.fileSystem_.isUpToDate(fileName):
-            status = network.getFile(self, fileName)
+            status = self.network_.getFile(self, fileName)
         return status

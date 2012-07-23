@@ -22,6 +22,9 @@ class FileSystem(Base):
 
     def list(self):
         return self.logical_.getFileList()
+    
+    def readIntoBuffer(self, fileName, buf, offset, bufsize):
+        return self.physical_.read(fileName, buf, offset, bufsize)
 
     def add(self, fileName, numChunks):
         self.logical_.add(fileName, numChunks)
@@ -43,33 +46,24 @@ class FileSystem(Base):
         self.logical_.setVersion(fileName, version)
 
     def write(self, fileName, buf, offset, bufsize):
-        if(self.isUpToDate(fileName)):
+        if(self.isUpToDate(fileName)): #if up to date, no conflicts
             self.physical_.write(fileName, buf, offset, bufsize)
             self.logical_.setNewVersion(fileName, self.getVersion(fileName).numEdits + 1, self.physical_.getNumChunks(fileName), self.dfs_.id)
-        else:
+        else: #conflicts
             pass
             
     def writeChunk(self, fileName, chunkNum, data):
         self.physical_.writeChunk(fileName, chunkNum, data)
         self.logical_.fileList[fileName].receiveChunk(chunkNum)
 
-    def readIntoBuffer(self, fileName, buf, offset, bufsize):
-        return self.physical_.readIntoBuffer(fileName, buf, offset, bufsize)
-
-    def serialize(self):
-        return serializer.serialize(self.logical_)
-
-    def readState(self, serializedState):
+    def loadState(self, serializedState):
         pass
 
     def writeState(self, serializedState):
         self.physical_.writeState(serializedState)
 
-    def editMade(self, fileName, editor='self'):
-        pass
-
-    def hasConflict(self, fileName, numEdits):
-        pass
+    def serialize(self):
+        return serializer.serialize(self.logical_)
 
     ##
     # Private methods
