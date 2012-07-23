@@ -20,13 +20,17 @@ class FileSystem(Base):
         self.logical_ = state
         # TODO: do a check to make sure the physical view matches the logical view
 
-    def delete(self, fileName):
-        pass
-
-    def localCopyDeleted(self, fileName):
-        pass
-
     def add(self, fileName, numChunks):
+        self.logical_.add(fileName, numChunks)
+
+    def delete(self, fileName):
+        self.logical_.delete(fileName)
+        self.physical_.deleteFile(fileName)
+    
+    def deleteLocalCopy(self, fileName):
+        self.physical_.deleteFile(fileName)
+    
+    def write(self, fileName, buf, offset, bufsize):
         pass
 
     def isUpToDate(self, fileName):
@@ -34,9 +38,6 @@ class FileSystem(Base):
 
     def list(self):
         pass
-
-    def exists(self, fileName):
-        return True
 
     def readIntoBuffer(self, fileName, buf, offset, bufsize):
         self.physical_.readIntoBuffer(fileName, buf, offset, bufsize)
@@ -48,10 +49,6 @@ class FileSystem(Base):
     def gotEdit(self, fileName, edit):
         pass
 
-    def deleteLocalCopy(self, fileName):
-        # delete only from storage, not file_state
-        pass
-
     def serialize(self):
         return serializer.serialize(self.logical_)
 
@@ -60,7 +57,18 @@ class FileSystem(Base):
 
     def readState(self, serializedState):
         pass
+    
+    def editMade(self, fileName, editor='self'):
+        pass
+
+    def hasConflict(self, fileName, numEdits):
+        pass
+
 
     ##
     # Private methods
     ##
+    
+    def exists(self, fileName):
+        return self.logical_.exists(fileName)
+
