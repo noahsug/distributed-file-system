@@ -11,3 +11,4 @@ PeerNotFound   =  5 # Cannot find some peer; warning, since others may be connec
 NotActive      = -6 # Can't do said operation because this object is not longer active
 CannotReadFile = -7 # Error reading the file
 InvalidBufferSize = -8
+FileNotFound = -9

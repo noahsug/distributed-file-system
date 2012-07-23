@@ -5,7 +5,6 @@
 from base import Base
 from physical_view import PhysicalView
 from logical_view import LogicalView
-import serializer
 
 class FileSystem(Base):
     def __init__(self, dfs):
@@ -17,12 +16,12 @@ class FileSystem(Base):
     # Public API
     ##
     def loadFromState(self, state):
-        self.logical_ = state
+        self.logical_.update(state)
         # TODO: do a check to make sure the physical view matches the logical view
 
     def list(self):
         return self.logical_.getFileList()
-    
+
     def readIntoBuffer(self, fileName, buf, offset, bufsize):
         return self.physical_.read(fileName, buf, offset, bufsize)
 
@@ -41,7 +40,7 @@ class FileSystem(Base):
 
     def getVersion(self, fileName):
         return self.logical_.getVersion(fileName)
-    
+
     def setVersion(self, fileName, version):
         self.logical_.setVersion(fileName, version)
 
@@ -51,7 +50,7 @@ class FileSystem(Base):
             self.logical_.setNewVersion(fileName, self.getVersion(fileName).numEdits + 1, self.physical_.getNumChunks(fileName), self.dfs_.id)
         else: #conflicts
             pass
-            
+
     def writeChunk(self, fileName, chunkNum, data):
         self.physical_.writeChunk(fileName, chunkNum, data)
         self.logical_.fileList[fileName].receiveChunk(chunkNum)
@@ -63,7 +62,7 @@ class FileSystem(Base):
         self.physical_.writeState(serializedState)
 
     def serialize(self):
-        return serializer.serialize(self.logical_)
+        return self.logical_.serialize()
 
     ##
     # Private methods

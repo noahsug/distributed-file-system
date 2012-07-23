@@ -8,6 +8,7 @@ from lock import Lock
 from network_thread import NetworkThread
 import serializer
 import dfs_socket
+import dfs_state
 import work
 
 class SenderThread(NetworkThread):
@@ -58,3 +59,10 @@ class SenderThread(NetworkThread):
             self.listenerLock_.acquire()
             self.listeners_.remove(lt) # other peer has disconnected
             self.listenerLock_.release()
+
+    def getPeers(self):
+        peers = []
+        for listener in self.listeners_:
+            if listener.hasConnDFS():
+                peers.append(listener.getConnDFS())
+        return peers

@@ -30,6 +30,12 @@ class ListenerThread(NetworkThread):
     def setConnection(self, conn):
         self.socket_ = conn
 
+    def hasConnDFS(self):
+        return self.connDFS_ != dfs_state.NullDFS
+
+    def getConnDFS(self):
+        return self.connDFS_
+
     def sendData(self, data):
         if not self.active_:
             return err.NotActive

@@ -9,6 +9,7 @@ from base import Base
 from file_system import FileSystem
 import work
 import dfs_socket
+import serializer
 
 class Network(Base):
     def __init__(self, dfs):
@@ -62,7 +63,8 @@ class Network(Base):
         pass
 
     def serialize(self):
-        return ''
+        peerState = self.sender_.getPeers()
+        return serializer.serialize(peerState)
 
     ##
     # Private methods
@@ -74,5 +76,6 @@ class Network(Base):
         lt.start()
         self.sender_.addListener(lt)
 
-#        w = work.Work(work.GIVE_HANDSHAKE, self.dfs_, lt.connDFS_, )
+#        data = (file_system.serialize(), self.serialize())
+#        w = work.Work(work.GIVE_HANDSHAKE, self.dfs_, lt.connDFS_)
 #        self.sender_.addWork(w)

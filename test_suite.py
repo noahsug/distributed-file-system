@@ -17,4 +17,7 @@ def test():
     p1.disconnect()
     p2.disconnect()
 
+    p1.exit()
+    p2.exit()
+
 test()
