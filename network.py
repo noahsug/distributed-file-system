@@ -77,6 +77,6 @@ class Network(Base):
         lt.start()
         self.sender_.addListener(lt)
 
-#        data = (file_system.serialize(), self.serialize())
-#        w = work.Work(work.GIVE_HANDSHAKE, self.dfs_, lt.connDFS_)
-#        self.sender_.addWork(w)
+        data = (file_system.serialize(), self.serialize())
+        w = work.Work(work.GIVE_HANDSHAKE, self.dfs_, lt.connDFS_, data)
+        self.sender_.addWork(w)

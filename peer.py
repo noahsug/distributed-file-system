@@ -66,6 +66,7 @@ class Peer(Base):
 
     # retire from the system
     def retire(self):
+        self.disconnect()
         return err.OK
 
     # connect to the internet
