@@ -17,6 +17,7 @@ class File(Base):
         self.numChunksOwned = 0
         self.chunksOwned = [False] * numChunks
         self.state = ""
+        self.readCounter = 0
 
     def existsLocally(self):
         return self.numChunksTotal == self.numChunksOwned
@@ -32,7 +33,10 @@ class File(Base):
     def setLocalVersion(self, numEdits, numChunks, fileSize, lastEdited):
         self.localVersion = Version(self.fileName, numEdits, numChunks, fileSize, lastEdited)
     
-    def getVersion(self):
+    def getLocalVersion(self):
         return self.localVersion
+    
+    def getLatestVersion(self):
+        return self.latestVersion
 
 

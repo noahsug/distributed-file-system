@@ -29,8 +29,11 @@ class LogicalView(Base):
     def exists(self, fileName):
         return (fileName in self.fileList_)
 
-    def getVersion(self, fileName):
-        return self.fileList_[fileName].getVersion()
+    def getLocalVersion(self, fileName):
+        return self.fileList_[fileName].getLocalVersion()
+
+    def getLatestVersion(self, fileName):
+        return self.fileList_[fileName].getLatestVersion()
 
     def setNewVersion(self, fileName, version):
         self.fileList_[fileName].setNewVersion(version)
