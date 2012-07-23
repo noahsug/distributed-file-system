@@ -72,10 +72,9 @@ class Peer(Base):
         newFileName = fileName + ".stable";
         while self.fileSystem_.exists(newFileName):
             newFileName = newFileName + ".stable"
-            
+
         self.fileSystem_.physical_.copyFile(fileName, newFileName)
         self.fileSystem_.add(newFileName, self.fileSystem_.physical_.getNumChunks(newFileName))
-        pass
 
     # save the most recent version of the file locally
     def pin(self, fileName):
