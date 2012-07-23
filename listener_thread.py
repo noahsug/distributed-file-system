@@ -69,7 +69,6 @@ class ListenerThread(NetworkThread):
             self.data_ += data
 
         if self.data_:
-            self.log_.v('received: ' + self.data_)
             work = self.unpackage(self.data_)
             if work:
                 self.callback_(work)
@@ -82,6 +81,7 @@ class ListenerThread(NetworkThread):
         return self.data_[-terminatorLen:] == dfs_socket.DATA_TERMINATOR
 
     def package(self, work):
+        work.dest = None
         data = serializer.serialize(work)
         data += dfs_socket.DATA_TERMINATOR
         return data
