@@ -22,6 +22,7 @@ class Peer(Base):
     def open(self, fileName, op):
         status = self.updateFile(fileName)
         if op is "r" and self.fileSystem_.canRead(fileName):
+            self.fileSystem_.logical_.fileList_[fileName].readCounter = self.fileSystem_.logical_.fileList_[fileName].readCounter + 1
             self.fileSystem_.logical_.fileList_[fileName].state = "r"
         elif op is "w" and self.fileSystem_.canWrite(fileName):
             self.fileSystem_.logical_.fileList_[fileName].state = "w"
@@ -32,7 +33,12 @@ class Peer(Base):
     def close(self, fileName):
         if self.fileSystem_.logical_.fileList_[fileName].state is "":
             return err.FileNotOpen
-        else: 
+        elif self.fileSystem_.logical_.fileList_[fileName].state is "r":
+            if self.fileSystem_.logical_.fileList_[fileName].readCounter > 0:
+                self.fileSystem_.logical_.fileList_[fileName].readCounter = self.fileSystem_.logical_.fileList_[fileName].readCounter - 1
+            else:
+                self.fileSystem_.logical_.fileList_[fileName].state = ""
+        else:
             self.fileSystem_.logical_.fileList_[fileName].state = ""
         return err.OK
 
@@ -62,6 +68,7 @@ class Peer(Base):
 
     # mark the file as stable
     def stable(self, fileName):
+        
         self.fileSystem_.physical_.copyFile(fileName, fileName + ".stable")
         self.fileSystem_.add(fileName + ".stable", self.fileSystem_.physical_.getNumChunks(fileName + ".stable"))
         pass

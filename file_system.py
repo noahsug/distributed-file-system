@@ -31,7 +31,11 @@ class FileSystem(Base):
         return self.logical_.fileList_[fileName].state is not "w"
 
     def readIntoBuffer(self, fileName, buf, offset, bufsize):
-        return self.physical_.read(fileName, buf, offset, bufsize)
+        status = self.physical_.read(fileName, buf, offset, bufsize)
+        if self.isUpToDate(fileName):
+            return status
+        else:
+            return err.FileOutOfDate
 
     def add(self, fileName, numChunks):
         self.logical_.add(fileName, self.physical_.getFileSize(fileName), numChunks)
@@ -49,14 +53,17 @@ class FileSystem(Base):
     def isNeedUpdate(self, fileName):
         return self.logical_.fileList[fileName].localVersion.before(self.logical_.fileList[fileName].latestVersion)
 
-    def getVersion(self, fileName):
-        return self.logical_.getVersion(fileName)
+    def getLocalVersion(self, fileName):
+        return self.logical_.getLocalVersion(fileName)
+    
+    def getLatestVersion(self, fileName):
+        return self.logical_.getLatestVersion(fileName)
 
     def write(self, fileName, buf, offset, bufsize):
 
         if self.isUpToDate(fileName): #if up to date, no conflicts
             self.physical_.write(fileName, buf, offset, bufsize)
-            ver = Version(fileName, self.getVersion(fileName).numEdits + 1, self.physical_.getNumChunks(fileName), self.physical_.getFileSize(fileName), self.dfs_.id)
+            ver = Version(fileName, self.getLocalVersion(fileName).numEdits + 1, self.physical_.getNumChunks(fileName), self.physical_.getFileSize(fileName), self.dfs_.id)
             self.logical_.setNewVersion(fileName, ver)
             return err.OK
         elif self.isNeedUpdate(fileName): #local < latest, conflict (update failed)
@@ -65,9 +72,9 @@ class FileSystem(Base):
             self.physical_.write(conflictName, buf, offset, bufsize)
             self.add(conflictName, self.physical_.getNumChunks(conflictName))
             return conflictName
-        else: #latest > local, offline edits
+        else: #local > latest, offline edits
             self.physical_.write(fileName, buf, offset, bufsize)
-            self.logical_.setLocalVersion(fileName, self.getVersion(fileName).numEdits + 1, self.physical_.getNumChunks(fileName), self.physical_.getFileSize(fileName), self.dfs_.id)
+            self.logical_.setLocalVersion(fileName, self.getLatestVersion(fileName).numEdits + 1, self.physical_.getNumChunks(fileName), self.physical_.getFileSize(fileName), self.dfs_.id)
             return err.OK
 
     def writeChunk(self, fileName, chunkNum, data):
