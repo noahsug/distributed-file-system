@@ -41,21 +41,21 @@ class PhysicalView(Base):
 
     ## to do
     def write(self, fileName, buf, offset, bufsize):
-        filePath = os.path.join(self.getBasePath(), fileName)
+        status = err.OK
+        f = open(os.path.join(self.getPath(), fileName), "w")
+        
+        if(offset > self.getFileSize(fileName)):
+            f.seek(0, 2)
+            f.write(' ' * (offset - self.getFileSize(fileName)))
+        
+        f.seek(offset, 0)
         try:
-            f = open(filePath, "w")
+            buf.tofile(f, bufsize)
         except Exception, ex:
-            self.log_.e('error opening file in write mode ' + filePath + ': ' + str(ex))
-            return err.FileNotFound
-
-        if offset > self.getFileSize(filePath):
-           # increment file size to
-           pass
-
-        f.seek(offset)
-        f.write(buf)
+            self.log_.e('failed to write ' + fileName + ' from ' + str(offset) + ' to ' + str(offset + bufsize) + ': ' + str(ex))
+            status = err.CannotReadFile
         f.close()
-        return err.OK
+        return status
 
     def getChunk(self, fileName, chunk):
         self.lock_.acquire()
