@@ -68,6 +68,9 @@ class FileSystem(Base):
             return err.OK
         elif self.isNeedUpdate(fileName): #local < latest, conflict (update failed)
             conflictName = fileName + '.' + self.dfs_.id
+            while self.physical_.exists(conflictName):
+                conflictName = conflictName + "." + self.dfs_.id
+
             self.physical_.copyFile(fileName, conflictName)
             self.physical_.write(conflictName, buf, offset, bufsize)
             self.add(conflictName, self.physical_.getNumChunks(conflictName))

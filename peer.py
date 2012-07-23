@@ -39,11 +39,12 @@ class Peer(Base):
             else:
                 self.fileSystem_.logical_.fileList_[fileName].state = ""
         else:
+            #self.network_.fileEdited(fileName, edit)
             self.fileSystem_.logical_.fileList_[fileName].state = ""
         return err.OK
 
     def read(self, fileName, buf, offset, bufsize):
-        if self.fileSystem_.logical_.fileList_[fileName].state is not "":
+        if self.fileSystem_.logical_.fileList_[fileName].state is "r":
             status = self.fileSystem_.readIntoBuffer(fileName, buf, offset, bufsize)
         else:
             return err.FileNotOpen
@@ -68,9 +69,12 @@ class Peer(Base):
 
     # mark the file as stable
     def stable(self, fileName):
-        
-        self.fileSystem_.physical_.copyFile(fileName, fileName + ".stable")
-        self.fileSystem_.add(fileName + ".stable", self.fileSystem_.physical_.getNumChunks(fileName + ".stable"))
+        newFileName = fileName + ".stable";
+        while self.fileSystem_.exists(newFileName):
+            newFileName = newFileName + ".stable"
+            
+        self.fileSystem_.physical_.copyFile(fileName, newFileName)
+        self.fileSystem_.add(newFileName, self.fileSystem_.physical_.getNumChunks(newFileName))
         pass
 
     # save the most recent version of the file locally
