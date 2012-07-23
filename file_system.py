@@ -26,7 +26,7 @@ class FileSystem(Base):
 
     def canRead(self, fileName):
         return self.logical_.fileList_[fileName].state is "" or self.logical_.fileList_[fileName].state is "r"
-    
+
     def canWrite(self, fileName):
         return self.logical_.fileList_[fileName].state is not "w"
 
@@ -75,12 +75,20 @@ class FileSystem(Base):
             return err.OK
 
     def writeChunk(self, fileName, chunkNum, data):
-        
+
         if not self.physical_.exists(fileName):
             self.physical_.fillEmptyFile(fileName, self.logical_.fileList_[fileName].latestVersion.fileSize)
-        
+
         self.physical_.writeChunk(fileName, chunkNum, data)
         self.logical_.fileList[fileName].receiveChunk(chunkNum)
+
+    def updateFiles(self, files):
+        # TODO make threadsafe
+        for file in files:
+            pass
+            # deleted?
+            # conflict?
+            # new file?
 
     # read serialized state from disk
     def readState(self):
