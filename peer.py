@@ -3,7 +3,6 @@
 ##
 
 from network import Network
-from file_system import FileSystem
 import error as err
 from dfs_state import DFS
 from base import Base
