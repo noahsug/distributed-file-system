@@ -26,15 +26,6 @@ class PhysicalView(Base):
         dirName = "peer" + str(self.dfs_.id)
         return shareFolderPath + dirName + "/"
 
-    def addEmptyFile(self, fileName, size):
-        self.acquire()
-        path = os.path.join(self.getPath(), fileName)
-        if not os.path.isfile(path):
-            w = open(path, "w")
-            w.write(' ' * size * dfs_socket.CHUNK_SIZE) # fill the file with empty space
-            w.close()
-        self.release()
-
     def copyFileLocally(self, filePath):
         self.acquire()
         newPath = os.path.join(self.getPath(), os.path.basename(filePath))
@@ -60,6 +51,34 @@ class PhysicalView(Base):
             return ''
         return text
 
+    def getLocalFiles(self):
+        self.acquire()
+        fileList = []
+        path = self.getPath()
+        if os.path.isdir(path):
+            for localFile in os.listdir(path):
+                localFilePath = os.path.join(path, localFile)
+                if os.path.isfile(localFilePath):
+                    fileList.append(localFilePath)
+        self.release()
+        return fileList
+
+    def getNumChunks(self, fileName):
+        self.acquire()
+        filePath = os.path.join(self.getPath(), fileName)
+        size = os.path.getsize(filePath)
+        self.release()
+        return int(size / dfs_socket.CHUNK_SIZE) + 1
+
+    def fillEmptyFile(self, fileName, size):
+        self.acquire()
+        path = os.path.join(self.getPath(), fileName)
+        if not os.path.isfile(path):
+            w = open(path, "w")
+            w.write(' ' * size * dfs_socket.CHUNK_SIZE) # fill the file with empty space
+            w.close()
+        self.release()
+        
     def getChunk(self, fileName, chunk):
         self.acquire()
         filePath = os.path.join(self.getPath(), fileName)
@@ -85,54 +104,10 @@ class PhysicalView(Base):
         f.close()
         self.release()
 
-    def getNumChunks(self, fileName):
-        self.acquire()
-        filePath = os.path.join(self.getPath(), fileName)
-        size = os.path.getsize(filePath)
-        self.release()
-        return int(size / dfs_socket.CHUNK_SIZE) + 1
-
-    def getLocalFiles(self):
-        self.acquire()
-        fileList = []
-        path = self.getPath()
-        if os.path.isdir(path):
-            for localFile in os.listdir(path):
-                localFilePath = os.path.join(path, localFile)
-                if os.path.isfile(localFilePath):
-                    fileList.append(localFilePath)
-        self.release()
-        return fileList
-
-    def addFile(self, fileName, numChunks):
-        self.acquire()
-        f = File(fileName, numChunks, self.dfs_.id)
-        self.fileList[fileName] = f
-        self.release()
-
     def deleteFile(self, fileName):
         self.acquire()
-        del self.fileList[fileName]
-        if(os.path.isdir(fileName)):
-            os.removedirs(fileName)
-            for key in self.fileList.iterkeys():
-                if fileName in key:
-                    del self.fileList[key]
-        elif(os.path.isfile(fileName)):
-            os.remove(fileName)
+        os.remove(fileName)
         self.release()
-
-    def editMade(self, fileName, editor='self'):
-        pass
-
-    def hasConflict(self, fileName, numEdits):
-        pass
-
-    def serializeStateToDisk(self):
-        pass
-
-    def deserializeStateFromDisk(self):
-        pass
 
     def readIntoBuffer(self, fileName, buf, offset, bufsize):
         # TODO add thread safetly
