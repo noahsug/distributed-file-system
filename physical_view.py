@@ -33,7 +33,9 @@ class PhysicalView(Base):
         status = err.OK
         f.seek(offset)
         try:
-            buf.fromfile(f, bufsize)
+            data = f.read(bufsize)
+            for i, d in enumerate(data):
+                buf[i] = d
         except Exception, ex:
             self.log_.e('failed to read ' + filePath + ' from ' + str(offset) + ' to ' + str(offset + bufsize) + ': ' + str(ex))
             status = err.CannotReadFile
@@ -49,7 +51,8 @@ class PhysicalView(Base):
 
         f.seek(offset, 0)
         try:
-            buf.tofile(f, bufsize)
+            for i in range(bufsize):
+                f.write(buf[i])
         except Exception, ex:
             self.log_.e('failed to write ' + fileName + ' from ' + str(offset) + ' to ' + str(offset + bufsize) + ': ' + str(ex))
             status = err.CannotReadFile
