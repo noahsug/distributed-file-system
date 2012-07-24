@@ -22,9 +22,12 @@ print "Can Read:" + str(fs.canRead('file1.txt'))
 print "Can Write:" + str(fs.canWrite('file1.txt'))
 
 fs.write('file1.txt', buf, 6, 4)
-fs.writeChunk('file1.txt', 0, 'data')
+fs.writeChunk('file1.txt', 0, 'databack')
+fs.write('file1.txt', buf, 12, 4)
 
 print fs.isUpToDate('file1.txt')
+
+print "numedits = " + str(fs.logical_.fileList_['file1.txt'].latestVersion.numEdits)
 
 #fs.delete('file1.txt')
 #fs.deleteLocalCopy('file1.txt')

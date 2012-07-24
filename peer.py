@@ -22,9 +22,16 @@ class Peer(Base):
     def open(self, fileName, op):
         status = self.updateFile(fileName)
         if op is "r" and self.fileSystem_.canRead(fileName):
-            self.fileSystem_.logical_.fileList_[fileName].readCounter = self.fileSystem_.logical_.fileList_[fileName].readCounter + 1
-            self.fileSystem_.logical_.fileList_[fileName].state = "r"
+            if self.fileSystem_.logical_.exists(fileName):
+                self.fileSystem_.logical_.fileList_[fileName].readCounter = self.fileSystem_.logical_.fileList_[fileName].readCounter + 1
+                self.fileSystem_.logical_.fileList_[fileName].state = "r"
+            else:
+                return err.FileNotFound
         elif op is "w" and self.fileSystem_.canWrite(fileName):
+            if not self.fileSystem_.logical_.exists(fileName):
+                buf = [' ']
+                self.fileSystem_.physical_.write(fileName, buf, 0, 1)
+                self.fileSystem_.logical_.add(fileName, self.fileSystem_.physical_.getFileSize(fileName), self.fileSystem_.physical_.getNumChunks(fileName))
             self.fileSystem_.logical_.fileList_[fileName].state = "w"
         else:
             return err.CannotOpenFile
