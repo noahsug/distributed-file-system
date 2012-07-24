@@ -31,9 +31,6 @@ class ListenerThread(NetworkThread):
     def setConnection(self, conn):
         self.socket_ = conn
 
-    def hasConnDFS(self):
-        return self.connDFS_ != dfs_state.NullDFS
-
     def getConnDFS(self):
         return self.connDFS_
 
@@ -94,7 +91,13 @@ class ListenerThread(NetworkThread):
         except Exception, ex:
             self.log_.e('failed to deserialize work')
             return None
+        work.dest = self
+        self.updateDFS(work.source)
         return work
+
+    def updateDFS(self, dfs):
+        if not self.connDFS_.isInit() and dfs.isInit():
+            self.connDFS_ = dfs
 
     def tearDown(self):
         self.socket_.close()

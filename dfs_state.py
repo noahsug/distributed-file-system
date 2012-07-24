@@ -14,4 +14,13 @@ class DFS:
     def init(self, addr, port):
         self.__init__(addr, port)
 
+    def __hash__(self):
+        return self.id.__hash__()
+
+    def equals(self, other):
+        return self.__hash__() == other.__hash__()
+
+    def isInit(self):
+        return self.addr != ''
+
 NullDFS = DFS()

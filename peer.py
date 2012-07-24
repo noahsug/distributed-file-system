@@ -98,27 +98,33 @@ class Peer(Base):
 
     # connect to the internet
     def connect(self):
-        self.network_.connect()
-        self.dfs_.online = True
-        return err.OK
+        if not self.dfs_.online:
+            self.network_.connect()
+            self.dfs_.online = True
+            return err.OK
+        else:
+            return err.AlreadyOnline
 
     # disconnect from the internet
     def disconnect(self):
-        self.network_.disconnect()
-        self.dfs_.online = False
-        return err.OK
+        if self.dfs_.online:
+            self.network_.disconnect()
+            self.dfs_.online = False
+            return err.OK
+        else:
+            return err.AlreadyOffline
 
     def query(self, status):
         return err.OK
 
     # exits the program
     def exit(self):
+        self.disconnect()
         fs = self.fileSystem_.getState()
         nw = self.network_.getState()
         state = (fs, nw)
         s = serializer.serialize(state)
         self.fileSystem_.writeState(s)
-        exit()
 
     ##
     # Private functions

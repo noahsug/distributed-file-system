@@ -15,14 +15,13 @@ class Network(Base):
     def __init__(self, dfs, fileSystem):
         Base.__init__(self, dfs)
         self.fileSystem_ = fileSystem
-        self.knownPeers_ = []
+        self.knownPeers_ = set()
 
     ##
     # Public API
     ##
-    def loadFromState(self, state):
-        pass
-#        self.knownPeers_ = state
+    def loadFromState(self, peers):
+        self.knownPeers_ = peers
 
     def connect(self):
         self.log_.v('connect')
@@ -34,6 +33,10 @@ class Network(Base):
 
     def join(self, dfs):
         self.log_.v('join')
+        self.sender_.registerConnDFS(dfs)
+        if not self.sender_.isConnectedTo(dfs):
+            return
+
         lt = ListenerThread(self.dfs_, self.sender_.addWork)
         status = lt.connect(dfs)
         if status < 0:
@@ -41,6 +44,7 @@ class Network(Base):
             return status
         lt.start()
         self.sender_.addListener(lt)
+        self.addHandshakeWork(lt)
 
     def disconnect(self):
         self.log_.v('disconnect')
@@ -78,17 +82,15 @@ class Network(Base):
         lt.setConnection(socket)
         lt.start()
         self.sender_.addListener(lt)
+        self.addHandshakeWork(lt)
 
+    def addKnownPeers(self):
+        for peerDFS in self.knownPeers_:
+            self.join(peerDFS)
+
+    def addHandshakeWork(self, lt):
         state = (self.fileSystem_.getState(), self.getState())
         data = serializer.serialize(state)
         w = work.Work(work.HANDSHAKE, self.dfs_, lt, data)
         self.sender_.addWork(w)
 
-    def addKnownPeers(self):
-        for peerDFS in self.knownPeers_:
-            lt = ListenerThread(self.dfs_, self.sender_.addWork)
-            status = lt.connect(peerDFS)
-            if status < 0:
-                self.log_.w('could not connect to known peer ' + str(peerDFS.id))
-            else:
-                self.sender_.addListener(lt)

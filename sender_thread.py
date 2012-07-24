@@ -15,20 +15,34 @@ class SenderThread(NetworkThread):
         NetworkThread.__init__(self, dfs)
         self.fileSystem_ = fileSystem
         self.listeners_ = []
-        self.listenerLock_ = Lock(dfs)
+        self.peerLock_ = Lock(dfs)
         self.workQueue_ = []
         self.work_ = None
+        self.knownPeers_ = set()
+
+    def isConnectedTo(self, dfs):
+        val = False
+        self.peerLock_.acquire()
+        for lt in self.listeners_:
+            if lt.getConnDFS().equals(dfs):
+                val = True
+                break
+        self.peerLock_.release()
+        return val
+
+    def registerConnDFS(self, dfs):
+        self.knownPeers_.add(dfs)
 
     def addListener(self, listener):
-        self.listenerLock_.acquire()
+        self.peerLock_.acquire()
         self.listeners_.append(listener)
-        self.listenerLock_.release()
+        self.peerLock_.release()
 
     def close(self):
-        self.listenerLock_.acquire()
+        self.peerLock_.acquire()
         for listener in self.listeners_:
             listener.close()
-        self.listenerLock_.release()
+        self.peerLock_.release()
         NetworkThread.close(self)
 
     def addWork(self, work):
@@ -45,26 +59,22 @@ class SenderThread(NetworkThread):
         self.log_.v('processing work of type ' + self.work_.type)
         if self.work_.source.id == self.dfs_.id:
             self.sendWork()
-        elif self.work_.type == work.HANDSHAKE:
-            self.handleHandshake()
+        else:
+            lt = self.work_.dest
+            self.knownPeers_.add(lt.getConnDFS())
+            if self.work_.type == work.HANDSHAKE:
+                self.handleHandshake()
 
     def sendWork(self):
         lt = self.work_.dest
         status = lt.sendWork(self.work_)
         if status < 0:
-            self.listenerLock_.acquire()
+            self.peerLock_.acquire()
             self.listeners_.remove(lt) # other peer has disconnected
-            self.listenerLock_.release()
+            self.peerLock_.release()
 
     def handleHandshake(self):
         self.log_.v('received handshake')
 
     def getPeers(self):
-        peers = []
-        self.listenerLock_.acquire()
-        for listener in self.listeners_:
-            if listener.hasConnDFS():
-                peers.append(listener.getConnDFS())
-        self.listenerLock_.release()
-        return peers
-
+        return self.knownPeers_

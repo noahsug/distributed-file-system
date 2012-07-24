@@ -1,5 +1,6 @@
 ##
 # Provides error codes.
+# > 0 means warning, < 0 means error
 ##
 
 OK             =  0 # Everything good
@@ -16,3 +17,5 @@ InvalidBufferSize = -9
 FileNotFound = -10
 FileNotOpen = -11
 FileNotOpenForWrite = -12
+AlreadyOffline = 13
+AlreadyOnline = 14

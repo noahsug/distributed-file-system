@@ -9,7 +9,7 @@ def testBasicUsage():
     p2 = Peer('localhost', 10002)
     p1.connect()
     p2.connect()
-    p1.join('localhost', 10002)
+#    p1.join('localhost', 10002)
 #    p1.write('', [], 0, 0)
 
     time.sleep(1)
