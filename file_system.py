@@ -24,6 +24,10 @@ class FileSystem(Base):
     def list(self):
         return self.logical_.getFileList()
 
+    # returns data from a random chunk from the given list of chunks
+    def getRandomChunk(chunks):
+        pass
+
     def canRead(self, fileName):
         return self.logical_.fileList_[fileName].state is "" or self.logical_.fileList_[fileName].state is "r"
 
@@ -83,14 +87,14 @@ class FileSystem(Base):
         for fil in files:
             if fil not in self.logical_.fileList_: # new fil?
                 self.add(fil.fileName, fil.latestVersion.numChunks)
-            
+
             if fil.isDeleted: # deleted?
                 self.logical_.fileList_[fil.fileName].isDeleted = True
-            
+
             if self.logical_.fileList_[fil.fileName].localVersion.hasLocalChanges(self.logical_.fileList_[fil.fileName].latestVersion) and self.logical_.fileList_[fil.fileName].latestVersion.isOutOfDate(fil.latestVersion): # conflict?
                 conflictName = self.resolveConflict(fil.fileName)
                 #self.physical_.write(conflictName, buf, offset, bufsize)
-                self.add(conflictName, self.physical_.getNumChunks(conflictName))         
+                self.add(conflictName, self.physical_.getNumChunks(conflictName))
 
     # read serialized state from disk
     def readState(self):
@@ -109,7 +113,7 @@ class FileSystem(Base):
 
     def exists(self, fileName):
         return self.logical_.exists(fileName)
-    
+
     def resolveConflict(self, fileName):
         conflictName = fileName + '.' + self.dfs_.id
         while self.physical_.exists(conflictName):
