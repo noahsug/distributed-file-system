@@ -38,8 +38,8 @@ class Network(Base):
         self.newPeerListener_.close()
         self.sender_.close()
 
-    def getFile(self, fileName, chunksOwned):
-        # ask each peer for a random file chunk until the file is fully retrieved
+    # ask each peer for a random file chunk until the file is fully retrieved
+    def getFile(self, fileName):
         return err.OK
 
     def fileEdited(self):
