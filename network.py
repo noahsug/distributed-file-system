@@ -15,12 +15,13 @@ class Network(Base):
     def __init__(self, dfs, fileSystem):
         Base.__init__(self, dfs)
         self.fileSystem_ = fileSystem
-        self.knownPeers_ = set()
+        self.knownPeers_ = []
 
     ##
     # Public API
     ##
     def loadFromState(self, peers):
+        self.log_.v('loaded ' + str(len(peers)) + ' from state')
         self.knownPeers_ = peers
 
     def connect(self):
@@ -32,9 +33,9 @@ class Network(Base):
         self.sender_.start()
 
     def join(self, dfs):
-        self.log_.v('join')
+        self.log_.v('join ' + str(dfs.id))
         self.sender_.registerConnDFS(dfs)
-        if not self.sender_.isConnectedTo(dfs):
+        if self.sender_.isConnectedTo(dfs):
             return
 
         lt = ListenerThread(self.dfs_, self.sender_.addWork)
@@ -42,6 +43,7 @@ class Network(Base):
         if status < 0:
             self.log_.e('join failed - cannot connect to peer')
             return status
+        self.log_.v('connected to ' + str(dfs.id))
         lt.start()
         self.sender_.addListener(lt)
         self.addHandshakeWork(lt)

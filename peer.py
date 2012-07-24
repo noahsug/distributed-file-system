@@ -139,7 +139,6 @@ class Peer(Base):
                 return
             self.fileSystem_.loadFromState(fs)
             self.network_.loadFromState(nw)
-            self.log_.v('successfully loaded states')
 
     def updateFile(self, fileName):
         status = err.OK

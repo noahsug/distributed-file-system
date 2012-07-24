@@ -114,7 +114,6 @@ class PhysicalView(Base):
         f = open(path, 'r')
         state = f.read()
         f.close()
-        self.log_.v('loaded state from disk')
         self.lock_.release()
         return state
 
