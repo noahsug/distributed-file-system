@@ -42,20 +42,8 @@ class Network(Base):
         # ask each peer for a random file chunk until the file is fully retrieved
         return err.OK
 
-    def fileAdded(self, fileName):
-        # TODO for testing purposes
-        self.sender_.addWork('123456789'*5 + dfs_socket.DATA_TERMINATOR)
-
-    def fileDeleted(self, fileName):
-        #update each peer that the file has been deleted
-        pass
-
-    def fileEdited(self, fileName, edit):
-        pass
-
-    def update(self):
-        #poll other peers to get up to date file status
-        pass
+    def fileEdited(self):
+        self.sender_.updateAll()
 
     def getState(self):
         return self.sender_.getPeers()

@@ -2,7 +2,7 @@
 # Represents a task that must get done. Work is serialized and sent over the network.
 ##
 
-HANDSHAKE = 'hs'
+UPDATE = 'u'
 
 class Work:
     def __init__(self, type, source, dest, data=None):

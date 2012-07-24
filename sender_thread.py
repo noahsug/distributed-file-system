@@ -46,11 +46,15 @@ class SenderThread(NetworkThread):
         self.peerLock_.acquire()
         self.listeners_.append(listener)
         self.peerLock_.release()
-        self.addHandshakeWork(listener)
+        self.addUpdateWork(listener)
 
-    def addHandshakeWork(self, lt):
+    def updateAll(self):
+        for lt in self.listeners_:
+            self.addUpdateWork(lt)
+
+    def addUpdateWork(self, lt):
         state = (self.fileSystem_.getState(), self.getPeers())
-        w = work.Work(work.HANDSHAKE, self.dfs_, lt, state)
+        w = work.Work(work.UPDATE, self.dfs_, lt, state)
         self.addWork(w)
 
     def isConnectedTo(self, dfs):
@@ -86,8 +90,8 @@ class SenderThread(NetworkThread):
             if lt.getConnDFS().isInit():
                 self.knownPeers_.add(lt.getConnDFS())
 
-            if self.work_.type == work.HANDSHAKE:
-                self.handleHandshake()
+            if self.work_.type == work.UPDATE:
+                self.handleUpdate()
             else:
                 self.log_.e('received work unkonwn type: ' + self.work_.type)
 
@@ -99,8 +103,8 @@ class SenderThread(NetworkThread):
             self.listeners_.remove(lt) # other peer has disconnected
             self.peerLock_.release()
 
-    def handleHandshake(self):
-        self.log_.v('received handshake')
+    def handleUpdate(self):
+        self.log_.v('received update')
         fs, ns = self.work_.data
         self.fileSystem_.updateFiles(fs)
         self.connectToMultiple(ns)
