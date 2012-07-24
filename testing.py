@@ -22,5 +22,16 @@ print "Can Read:" + str(fs.canRead('file1.txt'))
 print "Can Write:" + str(fs.canWrite('file1.txt'))
 
 fs.write('file1.txt', buf, 6, 4)
+fs.writeChunk('file1.txt', 0, 'data')
+
+print fs.isUpToDate('file1.txt')
+
+#fs.delete('file1.txt')
+#fs.deleteLocalCopy('file1.txt')
+
+li = fs.list()
+for f in li:
+    print f.fileName + '(IsDeleted = ' + str(f.isDeleted) + ')'
+    f.state = "r"
 
 print('done')
