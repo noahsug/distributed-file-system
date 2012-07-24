@@ -7,6 +7,7 @@ from version import Version
 from physical_view import PhysicalView
 from logical_view import LogicalView
 import error as err
+import random
 
 class FileSystem(Base):
     def __init__(self, dfs):
@@ -25,8 +26,20 @@ class FileSystem(Base):
         return self.logical_.getFileList()
 
     # returns data from a random chunk from the given list of chunks
-    def getRandomChunk(chunks):
-        pass
+    def getRandomChunk(self, fileName, chunks):
+        
+        if not self.isUpToDate(fileName):
+            return None
+        
+        missing = []
+        
+        for i, c in enumerate(chunks):
+            if not c:
+                missing.append(i)
+                
+        ind = missing[random.randint(0, len(missing))]
+        
+        return self.physical_.getChunk(fileName, ind)
 
     def canRead(self, fileName):
         return self.logical_.fileList_[fileName].state is "" or self.logical_.fileList_[fileName].state is "r"
