@@ -35,12 +35,8 @@ class Peer(Base):
             self.fileSystem_.logical_.fileList_[fileName].state = "w"
         else:
             return err.CannotOpenFile
-<<<<<<< HEAD
+
         return status
-=======
-        
-        return err.OK
->>>>>>> peer.open
 
     def close(self, fileName):
         if self.fileSystem_.logical_.fileList_[fileName].state is "":
