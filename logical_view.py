@@ -23,7 +23,8 @@ class LogicalView(Base):
 
     def delete(self, fileName):
         self.lock_.acquire()
-        del self.fileList_[fileName]
+        #del self.fileList_[fileName]
+        self.fileList_[fileName].isDeleted = True
         self.lock_.release()
 
     def exists(self, fileName):

@@ -13,5 +13,9 @@ class Version:
     def equals(self, otherVersion):
         return (self.fileName == otherVersion.fileName and self.numEdits == otherVersion.numEdits and self.numChunks == otherVersion.numChunks and self.fileSize == otherVersion.fileSize and self.lastEdited == otherVersion.lastEdited)
     
-    def before(self, otherVersion):
+    def isOutOfDate(self, otherVersion):
         return (self.fileName == otherVersion.fileName and self.numEdits < otherVersion.numEdits)
+    
+    def hasLocalChanges(self, otherVersion):
+        return (self.fileName == otherVersion.fileName and self.numEdits > otherVersion.numEdits)
+        

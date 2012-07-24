@@ -50,9 +50,6 @@ class FileSystem(Base):
     def isUpToDate(self, fileName):
         return self.logical_.fileList[fileName].localVersion.equals(self.logical_.fileList[fileName].latestVersion)
 
-    def isNeedUpdate(self, fileName):
-        return self.logical_.fileList[fileName].localVersion.before(self.logical_.fileList[fileName].latestVersion)
-
     def write(self, fileName, buf, offset, bufsize):
 
         if self.isUpToDate(fileName): #if up to date, no conflicts
@@ -60,12 +57,8 @@ class FileSystem(Base):
             ver = Version(fileName, self.logical_.getLocalVersion(fileName).numEdits + 1, self.physical_.getNumChunks(fileName), self.physical_.getFileSize(fileName), self.dfs_.id)
             self.logical_.setNewVersion(fileName, ver)
             return err.OK
-        elif self.isNeedUpdate(fileName): #local < latest, conflict (update failed)
-            conflictName = fileName + '.' + self.dfs_.id
-            while self.physical_.exists(conflictName):
-                conflictName = conflictName + "." + self.dfs_.id
-
-            self.physical_.copyFile(fileName, conflictName)
+        elif self.logical_.fileList_[fileName].localVersion.isOutOfDate(self.logical_.fileList[fileName].latestVersion): #local < latest, conflict (update failed)
+            conflictName = self.resolveConflict(fileName)
             self.physical_.write(conflictName, buf, offset, bufsize)
             self.add(conflictName, self.physical_.getNumChunks(conflictName))
             return conflictName
@@ -85,10 +78,16 @@ class FileSystem(Base):
     def updateFiles(self, files):
         # TODO make threadsafe
         for file in files:
-            pass
-            # deleted?
-            # conflict?
-            # new file?
+            if file not in self.logical_.fileList_: # new file?
+                self.add(file.fileName, file.latestVersion.numChunks)
+            
+            if file.isDeleted: # deleted?
+                self.logical_.fileList_[file.fileName].isDeleted = True
+            
+            if self.logical_.fileList_[file.fileName].localVersion.hasLocalChanges(self.logical_.fileList_[file.fileName].latestVersion) and self.logical_.fileList_[file.fileName].latestVersion.isOutOfDate(file.latestVersion): # conflict?
+                conflictName = self.resolveConflict(file.fileName)
+                #self.physical_.write(conflictName, buf, offset, bufsize)
+                self.add(conflictName, self.physical_.getNumChunks(conflictName))         
 
     # read serialized state from disk
     def readState(self):
@@ -107,4 +106,12 @@ class FileSystem(Base):
 
     def exists(self, fileName):
         return self.logical_.exists(fileName)
+    
+    def resolveConflict(self, fileName):
+        conflictName = fileName + '.' + self.dfs_.id
+        while self.physical_.exists(conflictName):
+            conflictName = conflictName + "." + self.dfs_.id
+
+        self.physical_.copyFile(fileName, conflictName)
+        return conflictName
 
