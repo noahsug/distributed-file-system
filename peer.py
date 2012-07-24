@@ -28,7 +28,7 @@ class Peer(Base):
             self.fileSystem_.logical_.fileList_[fileName].state = "w"
         else:
             return err.CannotOpenFile
-        return err.OK
+        return status
 
     def close(self, fileName):
         if self.fileSystem_.logical_.fileList_[fileName].state is "":
@@ -39,7 +39,7 @@ class Peer(Base):
             else:
                 self.fileSystem_.logical_.fileList_[fileName].state = ""
         else:
-            #self.network_.fileEdited(fileName, edit)
+            self.network_.fileEdited()
             self.fileSystem_.logical_.fileList_[fileName].state = ""
         return err.OK
 
@@ -61,7 +61,7 @@ class Peer(Base):
     def delete(self, fileName):
         self.log_.v('delete ' + fileName)
         self.fileSystem_.delete(fileName)
-        self.network_.fileDeleted(fileName)
+        self.network_.fileEdited()
         return err.OK
 
     def listFiles(self, files):

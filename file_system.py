@@ -68,10 +68,11 @@ class FileSystem(Base):
         self.physical_.deleteFile(fileName)
 
     def isUpToDate(self, fileName):
+        if not fileName self.logical_.fileList_:
+            return True
         return self.logical_.fileList_[fileName].localVersion.equals(self.logical_.fileList_[fileName].latestVersion)
 
     def write(self, fileName, buf, offset, bufsize):
-
         if self.isUpToDate(fileName): #if up to date, no conflicts
             self.physical_.write(fileName, buf, offset, bufsize)
             ver = Version(fileName, self.logical_.getLocalVersion(fileName).numEdits + 1, self.physical_.getNumChunks(fileName), self.physical_.getFileSize(fileName), self.dfs_.id)
