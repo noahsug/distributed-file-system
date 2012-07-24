@@ -38,7 +38,10 @@ class FileSystem(Base):
             return err.FileOutOfDate
 
     def add(self, fileName, numChunks):
-        self.logical_.add(fileName, self.physical_.getFileSize(fileName), numChunks)
+        if self.physical_.exists(fileName):
+            self.logical_.add(fileName, self.physical_.getFileSize(fileName), numChunks)
+        else:
+            self.logical_.add(fileName, 0, 0)
 
     def delete(self, fileName):
         self.logical_.delete(fileName)
@@ -48,7 +51,7 @@ class FileSystem(Base):
         self.physical_.deleteFile(fileName)
 
     def isUpToDate(self, fileName):
-        return self.logical_.fileList[fileName].localVersion.equals(self.logical_.fileList[fileName].latestVersion)
+        return self.logical_.fileList_[fileName].localVersion.equals(self.logical_.fileList_[fileName].latestVersion)
 
     def write(self, fileName, buf, offset, bufsize):
 
@@ -57,7 +60,7 @@ class FileSystem(Base):
             ver = Version(fileName, self.logical_.getLocalVersion(fileName).numEdits + 1, self.physical_.getNumChunks(fileName), self.physical_.getFileSize(fileName), self.dfs_.id)
             self.logical_.setNewVersion(fileName, ver)
             return err.OK
-        elif self.logical_.fileList_[fileName].localVersion.isOutOfDate(self.logical_.fileList[fileName].latestVersion): #local < latest, conflict (update failed)
+        elif self.logical_.fileList_[fileName].localVersion.isOutOfDate(self.logical_.fileList_[fileName].latestVersion): #local < latest, conflict (update failed)
             conflictName = self.resolveConflict(fileName)
             self.physical_.write(conflictName, buf, offset, bufsize)
             self.add(conflictName, self.physical_.getNumChunks(conflictName))
@@ -73,7 +76,7 @@ class FileSystem(Base):
             self.physical_.fillEmptyFile(fileName, self.logical_.fileList_[fileName].latestVersion.fileSize)
 
         self.physical_.writeChunk(fileName, chunkNum, data)
-        self.logical_.fileList[fileName].receiveChunk(chunkNum)
+        self.logical_.fileList_[fileName].receiveChunk(chunkNum)
 
     def updateFiles(self, files):
         # TODO make threadsafe
