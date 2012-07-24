@@ -27,18 +27,18 @@ class FileSystem(Base):
 
     # returns data from a random chunk from the given list of chunks
     def getRandomChunk(self, fileName, chunks):
-        
+
         if not self.isUpToDate(fileName):
             return None
-        
+
         missing = []
-        
+
         for i, c in enumerate(chunks):
             if not c:
                 missing.append(i)
-                
+
         ind = missing[random.randint(0, len(missing))]
-        
+
         return self.physical_.getChunk(fileName, ind)
 
     def canRead(self, fileName):
@@ -97,7 +97,7 @@ class FileSystem(Base):
 
     def updateFiles(self, files):
         # TODO make threadsafe
-        for fil in files:
+        for fil in files.values():
             if fil not in self.logical_.fileList_: # new fil?
                 self.add(fil.fileName, fil.latestVersion.numChunks)
 

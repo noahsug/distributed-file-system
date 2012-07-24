@@ -60,11 +60,20 @@ class PhysicalView(Base):
         return status
 
     def getChunk(self, fileName, chunk):
-        self.lock_.acquire()
         filePath = os.path.join(self.getBasePath(), fileName)
-        f = open(filePath, 'r')
-        f.seek(chunk * dfs_socket.CHUNK_SIZE)
-        data = f.read(dfs_socket.CHUNK_SIZE)
+        self.lock_.acquire()
+        try:
+            f = open(filePath, 'r')
+        except Exception, ex:
+            self.log_.e('getChunk - failed to open ' + filePath)
+            return None
+
+        data = None
+        try:
+            f.seek(chunk * dfs_socket.CHUNK_SIZE)
+            data = f.read(dfs_socket.CHUNK_SIZE)
+        except Exception, ex:
+            self.log_.e('getChunk - failed to seek to chunk ' + chunk + ' in ' + filePath)
         f.close()
         self.lock_.release()
         return data

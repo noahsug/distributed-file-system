@@ -43,10 +43,7 @@ class LogicalView(Base):
         self.fileList_[fileName].setLocalVersion(numEdits, numChunks, fileSize, lastEdited)
 
     def getFileList(self):
-        files = []
-        for value in self.fileList_.values():
-            files.append(value)
-        return files
+        return self.fileList_.values()
 
     def getState(self):
         return self.fileList_
