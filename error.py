@@ -19,3 +19,6 @@ FileNotOpen = -11
 FileNotOpenForWrite = -12
 AlreadyOffline = 13
 AlreadyOnline = 14
+CannotFullyUpdateFile = 15
+InvalidOp = -16
+CausedConflict = 17

@@ -10,6 +10,7 @@ from listener_thread import ListenerThread
 import dfs_socket
 import dfs_state
 import work
+import error as err
 
 class SenderThread(NetworkThread):
     def __init__(self, dfs, fileSystem):
@@ -20,6 +21,10 @@ class SenderThread(NetworkThread):
         self.workQueue_ = []
         self.work_ = None
         self.knownPeers_ = set()
+        self.fileFetchStatus = []
+
+    def isDoneFileFetch(self):
+        return len(fileFetchStatus) == 0
 
     def getPeers(self):
         return self.knownPeers_
@@ -52,10 +57,11 @@ class SenderThread(NetworkThread):
         for lt in self.listeners_:
             self.addUpdateWork(lt)
 
-    def addUpdateWork(self, lt):
-        state = (self.fileSystem_.getState(), self.getPeers())
-        w = work.Work(work.UPDATE, self.dfs_, lt, state)
-        self.addWork(w)
+    def beginFileFetch(self, fileName):
+        for lt in self.listeners_:
+            fileFetchStatus.append(lt)
+            for lt in self.listeners_:
+                self.addChunkRequestWork(lt, fileName)
 
     def isConnectedTo(self, dfs):
         if dfs == self.dfs_:
@@ -92,6 +98,12 @@ class SenderThread(NetworkThread):
 
             if self.work_.type == work.UPDATE:
                 self.handleUpdate()
+            elif self.work_.type == work.CHUNK_REQUEST:
+                self.handleChunkRequest()
+            elif self.work_.type == work.CHUNK_RESPONSE:
+                self.handleChunkResponse()
+            elif self.work_.type == work.NO_CHUNK:
+                self.handleNoChunk()
             else:
                 self.log_.e('received work unkonwn type: ' + self.work_.type)
 
@@ -104,10 +116,48 @@ class SenderThread(NetworkThread):
             self.peerLock_.release()
 
     def handleUpdate(self):
-        self.log_.v('received update')
+        lt = self.work_.dest
+        self.log_.v('received update from ' + str(lt.getConnDFS().id))
         fs, ns = self.work_.data
-        self.fileSystem_.updateFiles(fs)
+        status = self.fileSystem_.updateFiles(fs)
         self.connectToMultiple(ns)
+        if status > err.CausedConflict:
+            self.log_.v('update from ' + str(lt.getConnDFS().id) + ' caused conflict, updating all peers')
+            self.updateAll()
+
+    def handleChunkRequest(self):
+        fileName, missingChunks = self.work_.data
+        lt = self.work_.dest
+        self.log_.v(lt.getConnDFS().id.str + ' requested a chunk for ' + fileName)
+        chunkInfo = self.fileSystem_.getRandomChunk(fileName, missingChunks)
+        self.addChunkResponseWork(self, chunkInfo)
+
+    def handleChunkResponse(self):
+        lt = self.work_.dest
+        fileName, chunkNum, chunkData = self.work_.data
+        self.log_.v(lt.getConnDFS.id.str + ' received chunk ' + chunkNum + ' of ' + fileName)
+        self.fileSystem_.writeChunk(fileName, chunkNum, chunkData)
+        self.addChunkRequestWork(lt, fileName)
+
+    def addUpdateWork(self, lt):
+        state = (self.fileSystem_.getState(), self.getPeers())
+        w = work.Work(work.UPDATE, self.dfs_, lt, state)
+        self.addWork(w)
+
+    def addChunkRequestWork(self, lt, fileName):
+        if self.fileSystem_.existsLocally
+        missingChunks = self.fileSystem_.getMissingChunks(fileName)
+        data = (fileName, missingChunks)
+        w = work.Work(work.CHUNK_REQUEST, self.dfs_, lt, data)
+        self.addWork(w)
+
+    def addChunkResponseWork(self, chunkInfo):
+        lt = self.work_.dest
+        if chunkInfo:
+            w = work.Work(work.CHUNK_RESPONSE, self.dfs_, lt, chunkInfo)
+        else:
+            w = work.Work(work.NO_CHUNK, self.dfs_, lt, None)
+        self.addWork(w)
 
     def close(self):
         self.peerLock_.acquire()

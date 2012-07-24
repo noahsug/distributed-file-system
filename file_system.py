@@ -27,19 +27,20 @@ class FileSystem(Base):
 
     # returns data from a random chunk from the given list of chunks
     def getRandomChunk(self, fileName, chunks):
-
         if not self.isUpToDate(fileName):
             return None
 
         missing = []
-
-        for i, c in enumerate(chunks):
-            if not c:
+        for i, hasChunk in enumerate(chunks):
+            if not hasChunk:
                 missing.append(i)
 
-        ind = missing[random.randint(0, len(missing))]
+        chunkNum = missing[random.randint(0, len(missing))]
+        chunkData = self.physical_.getChunk(fileName, chunkNum)
+        return (fileName, chunkNum, chunkData)
 
-        return self.physical_.getChunk(fileName, ind)
+    def getMissingChunks(self, fileName):
+        return self.logical_.fileList_[fileName].chunksOwned
 
     def canRead(self, fileName):
         return self.logical_.fileList_[fileName].state is "" or self.logical_.fileList_[fileName].state is "r"
@@ -68,8 +69,6 @@ class FileSystem(Base):
         self.physical_.deleteFile(fileName)
 
     def isUpToDate(self, fileName):
-        if not fileName in self.logical_.fileList_:
-            return True
         return self.logical_.fileList_[fileName].localVersion.equals(self.logical_.fileList_[fileName].latestVersion)
 
     def write(self, fileName, buf, offset, bufsize):
@@ -89,6 +88,8 @@ class FileSystem(Base):
             return err.OK
 
     def writeChunk(self, fileName, chunkNum, data):
+        if self.logical_.fileList_[fileName].chunksOwned[chunkNum]:
+            return # already has chunk
 
         if not self.physical_.exists(fileName):
             self.physical_.fillEmptyFile(fileName, self.logical_.fileList_[fileName].latestVersion.fileSize)
@@ -97,18 +98,35 @@ class FileSystem(Base):
         self.logical_.fileList_[fileName].receiveChunk(chunkNum)
 
     def updateFiles(self, files):
+        status = err.OK
         # TODO make threadsafe
-        for fil in files.values():
-            if fil not in self.logical_.fileList_: # new fil?
-                self.add(fil.fileName, fil.latestVersion.numChunks)
+        for file in files.values():
+            if file not in self.logical_.fileList_: # new file?
+                self.add(file.fileName, file.latestVersion.numChunks)
 
-            if fil.isDeleted: # deleted?
-                self.logical_.fileList_[fil.fileName].isDeleted = True
+            localFile = self.logical_.fileList_[file.fileName]
+            if file.isDeleted: # deleted?
+                localFile.isDeleted = True
 
-            if self.logical_.fileList_[fil.fileName].localVersion.hasLocalChanges(self.logical_.fileList_[fil.fileName].latestVersion) and self.logical_.fileList_[fil.fileName].latestVersion.isOutOfDate(fil.latestVersion): # conflict?
-                conflictName = self.resolveConflict(fil.fileName)
-                #self.physical_.write(conflictName, buf, offset, bufsize)
+            if localFile.hasLocalChanges() and localFile.isOutOfDate(file): # conflict?
+                conflictName = self.resolveConflict(file.fileName)
                 self.add(conflictName, self.physical_.getNumChunks(conflictName))
+                status = err.CausedConflict
+        return status
+
+    def beginLocalUpdate(self, fileName):
+        self.deleteLocalCopy(self, fileName)
+        self.logical_.beginLocalUpdate(fileName)
+
+    def finishLocalUpdate(self, fileName):
+        file = self.logical_.fileList_[fileName]
+        if file.existsLocally():
+            file.localVersion = file.latestVersion
+            return err.OK
+        else:
+            self.log_.v('failed to fully update ' + fileName + ': only got ' +
+                        str(file.numChunksOwned) + '/' + str(file.numChunksTotal))
+            return err.CannotFullyUpdateFile
 
     # read serialized state from disk
     def readState(self):
@@ -121,12 +139,12 @@ class FileSystem(Base):
     def getState(self):
         return self.logical_.getState()
 
+    def exists(self, fileName):
+        return self.logical_.exists(fileName)
+
     ##
     # Private methods
     ##
-
-    def exists(self, fileName):
-        return self.logical_.exists(fileName)
 
     def resolveConflict(self, fileName):
         conflictName = fileName + '.' + self.dfs_.id

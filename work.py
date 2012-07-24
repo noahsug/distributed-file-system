@@ -3,6 +3,9 @@
 ##
 
 UPDATE = 'u'
+CHUNK_REQUEST = 'creq'
+CHUNK_RESPONSE = 'cresp'
+NO_CHUNK = 'cfail'
 
 class Work:
     def __init__(self, type, source, dest, data=None):

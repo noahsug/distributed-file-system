@@ -24,20 +24,28 @@ class File(Base):
         return self.numChunksTotal == self.numChunksOwned
 
     def receiveChunk(self, chunkIndex):
+        if self.chunksOwned[chunkIndex]:
+            self.log_.w(self.fileName + ' received chunk ' + chunkIndex + ', but it was already owned!')
+            return
         self.chunksOwned[chunkIndex] = True
         self.numChunksOwned += 1
-    
+
     def setNewVersion(self, version):
         self.localVersion = version
         self.latestVersion = version
-        
+
     def setLocalVersion(self, numEdits, numChunks, fileSize, lastEdited):
         self.localVersion = Version(self.fileName, numEdits, numChunks, fileSize, lastEdited)
-    
+
     def getLocalVersion(self):
         return self.localVersion
-    
+
     def getLatestVersion(self):
         return self.latestVersion
 
+    def hasLocalChanges(self):
+        return self.localVersion.numEdits > self.latestVersion.numEdits
+
+    def isOutOfDate(self, otherFile):
+        return self.latestVersion.numEdits < otherFile.latestVersion.numEdits
 

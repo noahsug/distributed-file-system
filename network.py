@@ -40,7 +40,12 @@ class Network(Base):
 
     # ask each peer for a random file chunk until the file is fully retrieved
     def getFile(self, fileName):
-        return err.OK
+        self.fileSystem_.beginLocalUpdate(fileName)
+        self.sender_.beginFileFetch(fileName)
+        while not self.sender_.isDoneFileFetch():
+            time.sleep(.1)
+        status = self.fileSystem_.finishLocalUpdate(fileName)
+        return status
 
     def fileEdited(self):
         self.sender_.updateAll()

@@ -21,40 +21,42 @@ class Peer(Base):
     ##
     def open(self, fileName, op):
         status = self.updateFile(fileName)
-        exists = self.fileSystem_.logical_.exists(fileName)
-        
+        exists = self.fileSystem_.exists(fileName)
+
         if op is "r":
             if exists:
                 if self.fileSystem_.canRead(fileName):
-                    self.fileSystem_.logical_.fileList_[fileName].readCounter = self.fileSystem_.logical_.fileList_[fileName].readCounter + 1
+                    self.fileSystem_.logical_.fileList_[fileName].readCounter += 1
                     self.fileSystem_.logical_.fileList_[fileName].state = "r"
                 else:
                     return err.CannotOpenFile
             else:
                 return err.FileNotFound
         elif op is "w":
-            if not self.fileSystem_.logical_.exists(fileName):
+            if not exists:
                 buf = [' ']
                 self.fileSystem_.physical_.write(fileName, buf, 0, 1)
-                self.fileSystem_.logical_.add(fileName, self.fileSystem_.physical_.getFileSize(fileName), self.fileSystem_.physical_.getNumChunks(fileName))
-            
+                self.fileSystem_.add(fileName, 1)
             if self.fileSystem_.canWrite(fileName):
                 self.fileSystem_.logical_.fileList_[fileName].state = "w"
+            else:
+                return err.CannotOpenFile
         else:
-            return err.CannotOpenFile
+            return err.InvalidOp
         return status
 
     def close(self, fileName):
-        if self.fileSystem_.logical_.fileList_[fileName].state is "":
+        file = self.fileSystem_.logical_.fileList_[fileName]
+        if file.state is "":
             return err.FileNotOpen
-        elif self.fileSystem_.logical_.fileList_[fileName].state is "r":
-            if self.fileSystem_.logical_.fileList_[fileName].readCounter > 0:
-                self.fileSystem_.logical_.fileList_[fileName].readCounter = self.fileSystem_.logical_.fileList_[fileName].readCounter - 1
+        elif file.state is "r":
+            if file.readCounter > 0:
+                file.readCounter -= 1
             else:
-                self.fileSystem_.logical_.fileList_[fileName].state = ""
+                file.state = ""
         else:
             self.network_.fileEdited()
-            self.fileSystem_.logical_.fileList_[fileName].state = ""
+            file.state = ""
         return err.OK
 
     def read(self, fileName, buf, offset, bufsize):
@@ -166,6 +168,8 @@ class Peer(Base):
 
     def updateFile(self, fileName):
         status = err.OK
+        if not self.fileSystem_.exists(fileName):
+            return status
         if not self.fileSystem_.isUpToDate(fileName):
             status = self.network_.getFile(fileName)
         return status
