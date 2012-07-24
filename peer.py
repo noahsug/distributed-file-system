@@ -20,7 +20,7 @@ class Peer(Base):
     # Public API
     ##
     def open(self, fileName, op):
-        self.updateFile(fileName)
+        status = self.updateFile(fileName)
         if op is "r" and self.fileSystem_.canRead(fileName):
             if self.fileSystem_.logical_.exists(fileName):
                 self.fileSystem_.logical_.fileList_[fileName].readCounter = self.fileSystem_.logical_.fileList_[fileName].readCounter + 1
@@ -35,7 +35,6 @@ class Peer(Base):
             self.fileSystem_.logical_.fileList_[fileName].state = "w"
         else:
             return err.CannotOpenFile
-
         return status
 
     def close(self, fileName):
