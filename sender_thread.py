@@ -24,7 +24,7 @@ class SenderThread(NetworkThread):
         val = False
         self.peerLock_.acquire()
         for lt in self.listeners_:
-            if lt.getConnDFS().equals(dfs):
+            if lt.getConnDFS() == dfs:
                 val = True
                 break
         self.peerLock_.release()

@@ -35,12 +35,12 @@ class Network(Base):
         self.log_.v('join ' + str(dfs.id))
         self.sender_.registerConnDFS(dfs)
         if self.sender_.isConnectedTo(dfs):
+            self.log_.v('already connected to ' + str(dfs.id))
             return
 
         lt = ListenerThread(self.dfs_, self.sender_.addWork)
         status = lt.connect(dfs)
         if status < 0:
-            self.log_.e('join failed - cannot connect to peer')
             return status
         self.log_.v('connected to ' + str(dfs.id))
         lt.start()
