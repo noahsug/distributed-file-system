@@ -68,7 +68,7 @@ class FileSystem(Base):
         self.physical_.deleteFile(fileName)
 
     def isUpToDate(self, fileName):
-        if not fileName self.logical_.fileList_:
+        if not fileName in self.logical_.fileList_:
             return True
         return self.logical_.fileList_[fileName].localVersion.equals(self.logical_.fileList_[fileName].latestVersion)
 
