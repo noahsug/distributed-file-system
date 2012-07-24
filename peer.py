@@ -94,19 +94,19 @@ class Peer(Base):
     # join DFS, connecting to the peer at the given addr and port if given
     def join(self, addr, port):
         self.log_.v('join')
-        status = self.network_.join(DFS(addr, port))
+        status = self.network_.connectTo(DFS(addr, port))
         return status
 
     # retire from the system
     def retire(self):
         self.log_.v('retire')
-        self.disconnect()
+        self.goOffline()
         return err.OK
 
     # connect to the internet
-    def connect(self):
+    def goOnline(self):
         if not self.dfs_.online:
-            self.log_.v('connect')
+            self.log_.v('go online')
             self.network_.connect()
             self.dfs_.online = True
             return err.OK
@@ -114,9 +114,9 @@ class Peer(Base):
             return err.AlreadyOnline
 
     # disconnect from the internet
-    def disconnect(self):
+    def goOffline(self):
         if self.dfs_.online:
-            self.log_.v('disconnect')
+            self.log_.v('go offline')
             self.network_.disconnect()
             self.dfs_.online = False
             return err.OK
@@ -129,10 +129,10 @@ class Peer(Base):
     # exits the program
     def exit(self):
         self.log_.v('exit')
-        self.disconnect()
+        self.goOffline()
         fs = self.fileSystem_.getState()
-        nw = self.network_.getState()
-        state = (fs, nw)
+        ns = self.network_.getState()
+        state = (fs, ns)
         s = serializer.serialize(state)
         self.fileSystem_.writeState(s)
 
@@ -143,12 +143,12 @@ class Peer(Base):
         state = self.fileSystem_.readState()
         if state:
             try:
-                fs, nw = serializer.deserialize(state)
+                fs, ns = serializer.deserialize(state)
             except Exception, ex:
                 self.log_.e('found state, but failed to deserialize: ' + str(ex))
                 return
             self.fileSystem_.loadFromState(fs)
-            self.network_.loadFromState(nw)
+            self.network_.loadFromState(ns)
 
     def updateFile(self, fileName):
         status = err.OK

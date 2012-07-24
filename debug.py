@@ -6,23 +6,23 @@ import threading
 
 class Logger:
     lock_ = threading.Lock()
-    verbosity = ['VERBO', 'DEBUG', 'WARN ', 'ERROR']
+    verbosity = ['V', 'D', 'W', 'E']
 
     def __init__(self, tag, dfs):
         self.tag_ = tag
         self.dfs_ = dfs
 
     def v(self, msg):
-        self.log('VERBO', msg)
+        self.log('V', msg)
 
     def d(self, msg):
-        self.log('DEBUG', msg)
+        self.log('D', msg)
 
     def w(self, msg):
-        self.log('WARN ', msg)
+        self.log('W', msg)
 
     def e(self, msg):
-        self.log('ERROR', msg)
+        self.log('E', msg)
 
     def log(self, verbosity, msg):
         if not verbosity in Logger.verbosity:

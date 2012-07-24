@@ -9,7 +9,6 @@ from base import Base
 import error as err
 import work
 import dfs_socket
-import serializer
 
 class Network(Base):
     def __init__(self, dfs, fileSystem):
@@ -31,7 +30,7 @@ class Network(Base):
         self.addKnownPeers()
         self.sender_.start()
 
-    def join(self, dfs):
+    def connectTo(self, dfs):
         self.log_.v('join ' + str(dfs.id))
         self.sender_.registerConnDFS(dfs)
         if self.sender_.isConnectedTo(dfs):
@@ -86,11 +85,9 @@ class Network(Base):
 
     def addKnownPeers(self):
         for peerDFS in self.knownPeers_:
-            self.join(peerDFS)
+            self.connectTo(peerDFS)
 
     def addHandshakeWork(self, lt):
         state = (self.fileSystem_.getState(), self.getState())
-        data = serializer.serialize(state)
-        w = work.Work(work.HANDSHAKE, self.dfs_, lt, data)
+        w = work.Work(work.HANDSHAKE, self.dfs_, lt, state)
         self.sender_.addWork(w)
-

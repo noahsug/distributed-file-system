@@ -78,6 +78,7 @@ class SenderThread(NetworkThread):
 
     def handleHandshake(self):
         self.log_.v('received handshake')
+        fs, ns = self.work_.data
 
     def getPeers(self):
         return self.knownPeers_
