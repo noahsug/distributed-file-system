@@ -18,6 +18,7 @@ class File(Base):
         self.chunksOwned = [False] * numChunks
         self.state = ""
         self.readCounter = 0
+        self.isDeleted = False
 
     def existsLocally(self):
         return self.numChunksTotal == self.numChunksOwned
