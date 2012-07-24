@@ -6,6 +6,7 @@ import time
 
 from lock import Lock
 from network_thread import NetworkThread
+from listener_thread import ListenerThread
 import dfs_socket
 import dfs_state
 import work
@@ -20,7 +21,41 @@ class SenderThread(NetworkThread):
         self.work_ = None
         self.knownPeers_ = set()
 
+    def getPeers(self):
+        return self.knownPeers_
+
+    def connectToMultiple(self, dfsList):
+        for dfs in dfsList:
+            self.connectTo(dfs)
+
+    def connectTo(self, dfs):
+        self.registerConnDFS(dfs)
+        if self.isConnectedTo(dfs):
+            self.log_.v('already connected to ' + str(dfs.id))
+            return
+
+        lt = ListenerThread(self.dfs_, self.addWork)
+        status = lt.connect(dfs)
+        if status < 0:
+            return status
+        self.log_.v('connected to ' + str(dfs.id))
+        lt.start()
+        self.addListener(lt)
+
+    def addListener(self, listener):
+        self.peerLock_.acquire()
+        self.listeners_.append(listener)
+        self.peerLock_.release()
+        self.addHandshakeWork(listener)
+
+    def addHandshakeWork(self, lt):
+        state = (self.fileSystem_.getState(), self.getPeers())
+        w = work.Work(work.HANDSHAKE, self.dfs_, lt, state)
+        self.addWork(w)
+
     def isConnectedTo(self, dfs):
+        if dfs == self.dfs_:
+            return True
         val = False
         self.peerLock_.acquire()
         for lt in self.listeners_:
@@ -32,18 +67,6 @@ class SenderThread(NetworkThread):
 
     def registerConnDFS(self, dfs):
         self.knownPeers_.add(dfs)
-
-    def addListener(self, listener):
-        self.peerLock_.acquire()
-        self.listeners_.append(listener)
-        self.peerLock_.release()
-
-    def close(self):
-        self.peerLock_.acquire()
-        for listener in self.listeners_:
-            listener.close()
-        self.peerLock_.release()
-        NetworkThread.close(self)
 
     def addWork(self, work):
         self.workQueue_.append(work)
@@ -79,6 +102,12 @@ class SenderThread(NetworkThread):
     def handleHandshake(self):
         self.log_.v('received handshake')
         fs, ns = self.work_.data
+        self.fileSystem_.updateFiles(fs)
+        self.connectToMultiple(ns)
 
-    def getPeers(self):
-        return self.knownPeers_
+    def close(self):
+        self.peerLock_.acquire()
+        for listener in self.listeners_:
+            listener.close()
+        self.peerLock_.release()
+        NetworkThread.close(self)

@@ -27,24 +27,12 @@ class Network(Base):
         self.newPeerListener_ = NewPeerListener(self.newPeerConnected, self.dfs_)
         self.newPeerListener_.start()
         self.sender_ = SenderThread(self.dfs_, self.fileSystem_)
-        self.addKnownPeers()
+        self.sender_.connectToMultiple(self.knownPeers_)
         self.sender_.start()
 
     def connectTo(self, dfs):
-        self.log_.v('join ' + str(dfs.id))
-        self.sender_.registerConnDFS(dfs)
-        if self.sender_.isConnectedTo(dfs):
-            self.log_.v('already connected to ' + str(dfs.id))
-            return
-
-        lt = ListenerThread(self.dfs_, self.sender_.addWork)
-        status = lt.connect(dfs)
-        if status < 0:
-            return status
-        self.log_.v('connected to ' + str(dfs.id))
-        lt.start()
-        self.sender_.addListener(lt)
-        self.addHandshakeWork(lt)
+        self.log_.v('connectTo ' + str(dfs.id))
+        self.sender_.connectTo(dfs)
 
     def disconnect(self):
         self.newPeerListener_.close()
@@ -81,13 +69,3 @@ class Network(Base):
         lt.setConnection(socket)
         lt.start()
         self.sender_.addListener(lt)
-        self.addHandshakeWork(lt)
-
-    def addKnownPeers(self):
-        for peerDFS in self.knownPeers_:
-            self.connectTo(peerDFS)
-
-    def addHandshakeWork(self, lt):
-        state = (self.fileSystem_.getState(), self.getState())
-        w = work.Work(work.HANDSHAKE, self.dfs_, lt, state)
-        self.sender_.addWork(w)
