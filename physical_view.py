@@ -29,7 +29,6 @@ class PhysicalView(Base):
             return err.FileNotFound
 
         # TODO return error if offset + bufsize > filesize
-
         status = err.OK
         f.seek(offset)
         try:
@@ -44,12 +43,13 @@ class PhysicalView(Base):
 
     def write(self, fileName, buf, offset, bufsize):
         status = err.OK
-        f = open(os.path.join(self.getBasePath(), fileName), "w")
-        if(offset > self.getFileSize(fileName)):
+        size = self.getFileSize(fileName)
+        f = open(os.path.join(self.getBasePath(), fileName), "r+")
+        if(offset > size):
             f.seek(0, 2)
-            f.write(' ' * (offset - self.getFileSize(fileName)))
+            f.write(' ' * (offset - size))
 
-        f.seek(offset, 0)
+        f.seek(offset)
         try:
             for i in range(bufsize):
                 f.write(buf[i])
@@ -148,29 +148,3 @@ class PhysicalView(Base):
 
     def getFileSize(self, fileName):
         return os.path.getsize(os.path.join(self.getBasePath(), fileName))
-#===============================================================================
-#    def copyFileLocally(self, filePath):
-#        self.lock_.acquire()
-#        newPath = os.path.join(self.getBasePath(), os.path.basename(filePath))
-#        if not os.path.isfile(newPath):
-#            w = open(newPath, "w")
-#            w.write(self.readFileNoLock(filePath))
-#            w.close()
-#        self.lock_.release()
-#
-#    def readFile(self, fileName):
-#        self.lock_.acquire()
-#        text = self.readFileNoLock(fileName)
-#        self.lock_.release()
-#        return text
-#
-#    def readFileNoLock(self, fileName):
-#        try:
-#            f = open(os.path.expanduser(fileName), 'r')
-#            text = f.read()
-#            f.close()
-#        except Exception, _ex:
-#            #DB('DEBUG: failed to readFileNoLock # ' + str(_ex))
-#            return ''
-#        return text
-#===============================================================================

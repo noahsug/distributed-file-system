@@ -80,15 +80,15 @@ class FileSystem(Base):
 
     def updateFiles(self, files):
         # TODO make threadsafe
-        for file in files:
-            if file not in self.logical_.fileList_: # new file?
-                self.add(file.fileName, file.latestVersion.numChunks)
+        for fil in files:
+            if fil not in self.logical_.fileList_: # new fil?
+                self.add(fil.fileName, fil.latestVersion.numChunks)
             
-            if file.isDeleted: # deleted?
-                self.logical_.fileList_[file.fileName].isDeleted = True
+            if fil.isDeleted: # deleted?
+                self.logical_.fileList_[fil.fileName].isDeleted = True
             
-            if self.logical_.fileList_[file.fileName].localVersion.hasLocalChanges(self.logical_.fileList_[file.fileName].latestVersion) and self.logical_.fileList_[file.fileName].latestVersion.isOutOfDate(file.latestVersion): # conflict?
-                conflictName = self.resolveConflict(file.fileName)
+            if self.logical_.fileList_[fil.fileName].localVersion.hasLocalChanges(self.logical_.fileList_[fil.fileName].latestVersion) and self.logical_.fileList_[fil.fileName].latestVersion.isOutOfDate(fil.latestVersion): # conflict?
+                conflictName = self.resolveConflict(fil.fileName)
                 #self.physical_.write(conflictName, buf, offset, bufsize)
                 self.add(conflictName, self.physical_.getNumChunks(conflictName))         
 

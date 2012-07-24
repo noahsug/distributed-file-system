@@ -1,12 +1,8 @@
 from file_system import FileSystem
 from dfs_state import DFS
-import array
 
 dfs_ = DFS('192.168.0.2', 10000)
 fs = FileSystem(dfs_)
-
-strz = 'abcd'
-t = buffer(strz)
 
 fs.add('file1.txt', 1)
 
@@ -16,16 +12,15 @@ for f in li:
     print f.fileName + '(IsDeleted = ' + str(f.isDeleted) + ')'
     f.state = "r"
 
-buf = []
-fs.readIntoBuffer('file1.txt', buf, 0, 1)
+buf = [' '] * 4
+fs.readIntoBuffer('file1.txt', buf, 0, 4)
+print buf
 
-stri = buf
-print stri
+buf[0] = 'z'
 
 print "Can Read:" + str(fs.canRead('file1.txt'))
 print "Can Write:" + str(fs.canWrite('file1.txt'))
 
-fs.write('file1.txt', strz, 8, 4)
-
+fs.write('file1.txt', buf, 6, 4)
 
 print('done')
