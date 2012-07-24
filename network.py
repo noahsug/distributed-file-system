@@ -21,11 +21,10 @@ class Network(Base):
     # Public API
     ##
     def loadFromState(self, peers):
-        self.log_.v('loaded ' + str(len(peers)) + ' from state')
+        self.log_.v('loaded ' + str(len(peers)) + ' peers from disk')
         self.knownPeers_ = peers
 
     def connect(self):
-        self.log_.v('connect')
         self.newPeerListener_ = NewPeerListener(self.newPeerConnected, self.dfs_)
         self.newPeerListener_.start()
         self.sender_ = SenderThread(self.dfs_, self.fileSystem_)
@@ -49,7 +48,6 @@ class Network(Base):
         self.addHandshakeWork(lt)
 
     def disconnect(self):
-        self.log_.v('disconnect')
         self.newPeerListener_.close()
         self.sender_.close()
 

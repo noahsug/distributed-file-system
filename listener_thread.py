@@ -38,6 +38,7 @@ class ListenerThread(NetworkThread):
         if not self.active_:
             return err.NotActive
         try:
+            self.log_.v('sending work of type ' + str(work.type) + ' to ' + str(self.connDFS_.id))
             data = self.package(work)
             self.socket_.sendall(data)
         except Exception, ex:
@@ -85,12 +86,15 @@ class ListenerThread(NetworkThread):
 
     def unpackage(self, data):
         terminatorLen = len(dfs_socket.DATA_TERMINATOR)
-        data = data[-terminatorLen:]
+        success = True
         try:
             work = serializer.deserialize(data)
         except Exception, ex:
-            self.log_.e('failed to deserialize work')
+            success = False
+        if not work or not success:
+            self.log_.e('failed to deserialize into work: ' + data)
             return None
+
         work.dest = self
         self.updateDFS(work.source)
         return work

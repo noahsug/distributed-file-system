@@ -28,6 +28,5 @@ class Logger:
         if not verbosity in Logger.verbosity:
             return
         Logger.lock_.acquire()
-        shorthand = self.dfs_.port - 10000
-        print '%s> %s # %s: %s' % (shorthand, verbosity, self.tag_, msg)
+        print '%s> %s # %s: %s' % (str(self.dfs_.id), verbosity, self.tag_, msg)
         Logger.lock_.release()

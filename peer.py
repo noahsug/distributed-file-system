@@ -59,16 +59,19 @@ class Peer(Base):
         return err.OK
 
     def delete(self, fileName):
+        self.log_.v('delete ' + fileName)
         self.fileSystem_.delete(fileName)
         self.network_.fileDeleted(fileName)
         return err.OK
 
     def listFiles(self, files):
+        self.log_.v('listFiles')
         files.fromlist(self.fileSystem_.list())
         return err.OK
 
     # mark the file as stable
-    def stable(self, fileName):
+    def markStable(self, fileName):
+        self.log_.v('mark stable ' + fileName)
         newFileName = fileName + ".stable";
         while self.fileSystem_.exists(newFileName):
             newFileName = newFileName + ".stable"
@@ -78,27 +81,32 @@ class Peer(Base):
 
     # save the most recent version of the file locally
     def pin(self, fileName):
+        self.log_.v('pin')
         status = self.updateFile(fileName)
         return status
 
     # delete the local copy of the file
     def unpin(self, fileName):
+        self.log_.v('unpin')
         self.fileSystem_.deleteLocalCopy(fileName)
         return err.OK
 
     # join DFS, connecting to the peer at the given addr and port if given
     def join(self, addr, port):
+        self.log_.v('join')
         status = self.network_.join(DFS(addr, port))
         return status
 
     # retire from the system
     def retire(self):
+        self.log_.v('retire')
         self.disconnect()
         return err.OK
 
     # connect to the internet
     def connect(self):
         if not self.dfs_.online:
+            self.log_.v('connect')
             self.network_.connect()
             self.dfs_.online = True
             return err.OK
@@ -108,6 +116,7 @@ class Peer(Base):
     # disconnect from the internet
     def disconnect(self):
         if self.dfs_.online:
+            self.log_.v('disconnect')
             self.network_.disconnect()
             self.dfs_.online = False
             return err.OK
@@ -119,6 +128,7 @@ class Peer(Base):
 
     # exits the program
     def exit(self):
+        self.log_.v('exit')
         self.disconnect()
         fs = self.fileSystem_.getState()
         nw = self.network_.getState()

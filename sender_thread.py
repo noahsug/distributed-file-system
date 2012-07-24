@@ -56,14 +56,17 @@ class SenderThread(NetworkThread):
             time.sleep(.05)
 
     def processWork(self):
-        self.log_.v('processing work of type ' + self.work_.type)
         if self.work_.source.id == self.dfs_.id:
             self.sendWork()
         else:
             lt = self.work_.dest
-            self.knownPeers_.add(lt.getConnDFS())
+            if lt.getConnDFS().isInit():
+                self.knownPeers_.add(lt.getConnDFS())
+
             if self.work_.type == work.HANDSHAKE:
                 self.handleHandshake()
+            else:
+                self.log_.e('received work unkonwn type: ' + self.work_.type)
 
     def sendWork(self):
         lt = self.work_.dest

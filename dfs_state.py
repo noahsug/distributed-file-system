@@ -15,7 +15,7 @@ class DFS:
         self.__init__(addr, port)
 
     def __hash__(self):
-        return self.id.__hash__()
+        return self.id.str.__hash__()
 
     def equals(self, other):
         return self.__hash__() == other.__hash__()
