@@ -49,12 +49,20 @@ class Network(Base):
         if not self.dfs_.online:
             return err.CannotFullyUpdateFile
 
+        self.log_.v('attempting to get ' + fileName)
+
         self.fileSystem_.beginLocalUpdate(fileName)
         self.sender_.beginFileFetch(fileName)
+        count = 0
         while not self.sender_.isDoneFileFetch():
             time.sleep(.1)
+            count += 1
+            if count > 100:
+                self.log_.w('getting ' + fileName + ' timed out')
+                break
+
         status = self.fileSystem_.finishLocalUpdate(fileName)
-        self.log_.v('finished getting ' + fileName + ': ' + status)
+        self.log_.v('finished getting ' + fileName + ': ' + str(status))
         return status
 
     def fileEdited(self):

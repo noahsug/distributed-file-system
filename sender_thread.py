@@ -120,6 +120,7 @@ class SenderThread(NetworkThread):
         status = lt.sendWork(self.work_)
         if status < 0:
             self.peerLock_.acquire()
+            self.log_.v('trying to send work, but ' + lt.getConnDFS().id.str + ' has disconnected')
             self.listeners_.remove(lt) # other peer has disconnected
             self.peerLock_.release()
 
@@ -136,9 +137,10 @@ class SenderThread(NetworkThread):
     def handleNoChunk(self):
         lt = self.work_.dest
         self.peerLock_.acquire()
-        if fileName in self.fileFetchStatus:
-            self.log_.v(lt.getConnDFS().id.str + ' can no longer provide chunks')
+        if lt in self.fileFetchStatus:
+            self.log_.v(lt.getConnDFS().id.str + ' is no longer providing chunks')
             self.fileFetchStatus.remove(lt)
+        self.peerLock_.release()
 
     def handleChunkRequest(self):
         fileName, missingChunks = self.work_.data
@@ -149,18 +151,22 @@ class SenderThread(NetworkThread):
     def handleChunkResponse(self):
         lt = self.work_.dest
         fileName, chunkNum, chunkData = self.work_.data
-        self.log_.v(lt.getConnDFS().id.str + ' received chunk ' + len(chunkNum) + ' of ' + fileName)
+        self.log_.v(lt.getConnDFS().id.str + ' received chunk ' + str(chunkNum) + ' of ' + fileName)
         self.fileSystem_.writeChunk(fileName, chunkNum, chunkData)
         self.addChunkRequestWork(lt, fileName)
 
     def addUpdateWork(self, lt):
         state = (self.fileSystem_.getState(), self.getPeers())
         w = work.Work(work.UPDATE, self.dfs_, lt, state)
-        self.log_.v('requesting an update from ' + lt.getConnDFS().id.str)
+        self.log_.v('sending an update to ' + lt.getConnDFS().id.str)
         self.addWork(w)
 
     def addChunkRequestWork(self, lt, fileName):
         missingChunks = self.fileSystem_.getMissingChunks(fileName)
+        if missingChunks == None:
+            self.log_.v(fileName + ' is no longer missing chunks. File retrieval complete')
+            self.handleNoChunk()
+            return
         data = (fileName, missingChunks)
         w = work.Work(work.CHUNK_REQUEST, self.dfs_, lt, data)
         self.log_.v('requesting a chunk of ' + fileName + ' from ' + lt.getConnDFS().id.str)
@@ -172,7 +178,7 @@ class SenderThread(NetworkThread):
         if chunkInfo:
             type = work.CHUNK_RESPONSE
             fileName, chunkNum, chunkData = chunkInfo
-            self.log_.v('sending ' + str(chunkNum) + ' of ' + fileName + ' to ' + lt.getConnDFS().id.str)
+            self.log_.v('sending chunk ' + str(chunkNum) + ' of ' + fileName + ' to ' + lt.getConnDFS().id.str)
         else:
             self.log_.v('do not have ' + fileName + ' chunk for ' + lt.getConnDFS().id.str)
             type = work.NO_CHUNK

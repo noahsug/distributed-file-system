@@ -42,6 +42,7 @@ def testOfflineUsage():
     p2.close('boobs.txt')
     p2.listFiles()
 
+    time.sleep(.5)
 
     p1.goOffline()
     p1.delete('boobs.txt')

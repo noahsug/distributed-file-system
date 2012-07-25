@@ -38,7 +38,6 @@ class ListenerThread(NetworkThread):
         if not self.active_:
             return err.NotActive
         try:
-            self.log_.v('sending work of type ' + str(work.type) + ' to ' + str(self.connDFS_.id))
             data = self.package(work)
             self.socket_.sendall(data)
         except Exception, ex:

@@ -6,7 +6,7 @@ import threading
 
 class Logger:
     lock_ = threading.Lock()
-    verb = ['V', 'D', 'W!!', 'E!!!!']
+    verb = ['V', '!!!D', 'W!!', 'E!!!!']
     used = [0, 1, 2, 3]
 
     def __init__(self, tag, dfs):

@@ -55,6 +55,9 @@ class FileSystem(Base):
         return (fileName, chunkNum, chunkData)
 
     def getMissingChunks(self, fileName):
+        file = self.logical_.getFile(fileName)
+        if file.latestVersion.numChunks == file.numChunksOwned:
+            return None
         return self.logical_.fileList_[fileName].chunksOwned
 
     def canRead(self, fileName):
@@ -112,6 +115,7 @@ class FileSystem(Base):
 
     def writeChunk(self, fileName, chunkNum, data):
         if self.logical_.fileList_[fileName].chunksOwned[chunkNum]:
+            self.log_.v('got chunk ' + str(chunkNum) + ' of ' + fileName + ', but we already have it')
             return # already has chunk
 
         if not self.physical_.exists(fileName):
@@ -167,12 +171,12 @@ class FileSystem(Base):
 
     def finishLocalUpdate(self, fileName):
         file = self.logical_.fileList_[fileName]
-        if file.existsLocally():
+        if file.latestVersion.numChunks == file.numChunksOwned:
             file.localVersion = file.latestVersion.copy()
             return err.OK
         else:
             self.log_.v('failed to fully update ' + fileName + ': only got ' +
-                        str(file.numChunksOwned) + '/' + str(file.numChunksTotal))
+                        str(file.numChunksOwned) + '/' + str(file.localVersion.numChunks))
             return err.CannotFullyUpdateFile
 
     # read serialized state from disk

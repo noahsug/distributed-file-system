@@ -4,12 +4,10 @@
 # - For each file, a count of how many global edits have accumulated on the file.
 ##
 
-from base import Base
 from version import Version
 import dfs_state
 
-class File(Base):
-
+class File():
     def __init__(self, fileName, numEdits, fileSize, lastEdited):
         self.fileName = fileName
         self.localVersion = Version(fileName, numEdits, fileSize, lastEdited)
@@ -28,7 +26,7 @@ class File(Base):
         self.numChunksOwned = numChunks
 
     def existsLocally(self):
-        return self.numChunksTotal == self.numChunksOwned
+        return self.localVersion.numChunks == self.numChunksOwned
 
     def receiveChunk(self, chunkIndex):
         if self.chunksOwned[chunkIndex]:
