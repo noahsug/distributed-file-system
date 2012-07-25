@@ -16,8 +16,9 @@ class LogicalView(Base):
         self.fileList_ = {}
 
     def beginLocalUpdate(self, fileName):
-        self.fileList_[fileName].chunksOwned = [False] * self.latestVersion.numChunks
-        self.fileList_[fileName].numChunksOwned = 0
+        file = self.fileList_[fileName]
+        file.chunksOwned = [False] * file.latestVersion.numChunks
+        file.numChunksOwned = 0
 
     def add(self, fileName, fileSize):
         self.lock_.acquire()

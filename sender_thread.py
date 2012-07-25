@@ -24,7 +24,7 @@ class SenderThread(NetworkThread):
         self.fileFetchStatus = []
 
     def isDoneFileFetch(self):
-        return len(fileFetchStatus) == 0
+        return len(self.fileFetchStatus) == 0
 
     def getPeers(self):
         return self.knownPeers_
@@ -58,12 +58,12 @@ class SenderThread(NetworkThread):
             self.addUpdateWork(lt)
 
     def beginFileFetch(self, fileName):
-        if len(fileFetchStatus) > 0:
+        if len(self.fileFetchStatus) > 0:
             self.log_.e('!!! beginning file fetch before previous fetch is done!')
         ltList = []
         self.peerLock_.acquire()
         for lt in self.listeners_:
-            fileFetchStatus.append(lt)
+            self.fileFetchStatus.append(lt)
             ltList.append(lt)
         self.peerLock_.release()
 
@@ -144,12 +144,12 @@ class SenderThread(NetworkThread):
         fileName, missingChunks = self.work_.data
         lt = self.work_.dest
         chunkInfo = self.fileSystem_.getRandomChunk(fileName, missingChunks)
-        self.addChunkResponseWork(self, chunkInfo, fileName)
+        self.addChunkResponseWork(chunkInfo, fileName)
 
     def handleChunkResponse(self):
         lt = self.work_.dest
         fileName, chunkNum, chunkData = self.work_.data
-        self.log_.v(lt.getConnDFS.id.str + ' received chunk ' + chunkNum + ' of ' + fileName)
+        self.log_.v(lt.getConnDFS().id.str + ' received chunk ' + len(chunkNum) + ' of ' + fileName)
         self.fileSystem_.writeChunk(fileName, chunkNum, chunkData)
         self.addChunkRequestWork(lt, fileName)
 
@@ -172,7 +172,7 @@ class SenderThread(NetworkThread):
         if chunkInfo:
             type = work.CHUNK_RESPONSE
             fileName, chunkNum, chunkData = chunkInfo
-            self.log_.v('sending ' + chunkNum + ' of ' + fileName + ' to ' + lt.getConnDFS().id.str)
+            self.log_.v('sending ' + str(chunkNum) + ' of ' + fileName + ' to ' + lt.getConnDFS().id.str)
         else:
             self.log_.v('do not have ' + fileName + ' chunk for ' + lt.getConnDFS().id.str)
             type = work.NO_CHUNK

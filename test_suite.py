@@ -35,9 +35,13 @@ def testOfflineUsage():
 
     p2.goOnline()
     p2.join(p1)
-
     time.sleep(1)
+
     p2.listFiles()
+    p2.open('boobs.txt', 'w')
+    p2.close('boobs.txt')
+    p2.listFiles()
+
 
     p1.goOffline()
     p1.delete('boobs.txt')

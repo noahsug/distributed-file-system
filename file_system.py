@@ -35,8 +35,23 @@ class FileSystem(Base):
             if not hasChunk:
                 missing.append(i)
 
-        chunkNum = missing[random.randint(0, len(missing))]
+        if len(missing) == 0:
+            self.log_.e('requested random chunk of ' + fileName + ', but none are missing!')
+            return None
+
+        chunkNum = missing[random.randint(0, len(missing) - 1)]
+
+        file = self.logical_.getFile(fileName)
+        if file.localVersion.numChunks <= chunkNum:
+            self.log_.e('requested random chunk of ' + fileName + ', but chunk ' + str(chunkNum) + ' >= ' + str(file.numChunks))
+            return None
+        if not file.chunksOwned[chunkNum]:
+            self.log_.e('requested random chunk of ' + fileName + ', but chunk ' + str(chunkNum) + ' is not owned!')
+            return None
+
         chunkData = self.physical_.getChunk(fileName, chunkNum)
+        if not chunkData:
+            return None
         return (fileName, chunkNum, chunkData)
 
     def getMissingChunks(self, fileName):
@@ -146,7 +161,8 @@ class FileSystem(Base):
         return status
 
     def beginLocalUpdate(self, fileName):
-        self.deleteLocalCopy(self, fileName)
+        if self.physical_.exists(fileName):
+            self.deleteLocalCopy(fileName)
         self.logical_.beginLocalUpdate(fileName)
 
     def finishLocalUpdate(self, fileName):
