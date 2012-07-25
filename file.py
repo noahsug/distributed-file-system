@@ -59,5 +59,5 @@ class File(Base):
         return self.localVersion.numEdits < self.latestVersion.numEdits
 
     def __str__(self):
-        data = (self.fileName, self.localVersion.numChunks, self.numChunksOwned, self.localVersion, self.latestVersion)
+        data = (self.fileName, self.numChunksOwned, self.localVersion.numChunks, self.localVersion, self.latestVersion)
         return '%s - %d/%d  local: (%s) latest: (%s)' % data

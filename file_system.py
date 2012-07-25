@@ -50,7 +50,7 @@ class FileSystem(Base):
 
     def readIntoBuffer(self, fileName, buf, offset, bufsize):
         status = self.physical_.read(fileName, buf, offset, bufsize)
-        if self.isUpToDate(fileName):
+        if not self.logical_.getFile(fileName).isOutOfDate():
             return status
         else:
             self.log_.v('read ' + fileName + ', which is out of date')
@@ -65,13 +65,15 @@ class FileSystem(Base):
 
     def delete(self, fileName):
         self.logical_.delete(fileName)
-        self.physical_.deleteFile(fileName)
+        if self.physical_.exists(fileName):
+            self.physical_.deleteFile(fileName)
 
     def deleteLocalCopy(self, fileName):
         self.physical_.deleteFile(fileName)
 
     def isUpToDate(self, fileName):
-        return self.logical_.fileList_[fileName].localVersion.equals(self.logical_.fileList_[fileName].latestVersion)
+        file = self.logical_.getFile(fileName)
+        return file.localVersion == file.latestVersion
 
     def write(self, fileName, buf, offset, bufsize):
         file = self.logical_.fileList_[fileName]
@@ -107,14 +109,16 @@ class FileSystem(Base):
         status = err.OK
         # TODO make threadsafe
         for file in files.values():
+            if file.isDeleted:
+                continue
+
             if not self.exists(file.fileName):
                 self.add(file.fileName, file.latestVersion.fileSize)
                 self.logical_.getFile(file.fileName).setNewVersion(file.latestVersion)
                 self.log_.v(file.fileName + ' has been CREATED during an update')
-                continue
 
             localFile = self.logical_.getFile(file.fileName)
-            if file.isDeleted and not localFile.isDeleted: # deleted?
+            if file.isDeleted and not localFile.isDeleted:
                 localFile.isDeleted = True
                 self.log_.v(localFile.fileName + ' has been DELETED during an update')
                 continue
@@ -126,14 +130,18 @@ class FileSystem(Base):
             if localFile.hasLocalChanges() and localFile.isOutOfDate(file):
                 # we made local changes while offline and another peer also made changes, conflict!
                 self.resolveConflict(file.fileName)
-                newVersionOfLocalFile = localFile
-                newVersionOfLocalFile.latestVersion = file.latestVersion.copy()
                 self.log_.v(localFile.fileName + ' has local changes and is out of date. Conflict detected during update.')
                 status = err.CausedConflict
 
-            elif localFile.hasLocalChanges():
+            if localFile.isOutOfDate(file):
+                self.log_.v('updated ' + localFile.fileName)
+                localFile.latestVersion = file.latestVersion.copy()
+
+        for file in self.list():
+            if file.hasLocalChanges():
                 # while we were offline we were the only ones to make changes, propagate them now
-                localFile.latestVersion = localFile.localVersion.copy()
+                file.latestVersion = file.localVersion.copy()
+                self.log_.v(file.fileName + ' has valid local changes after an update. Now propagating')
 
         return status
 

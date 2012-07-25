@@ -2,10 +2,10 @@
 # Represents a task that must get done. Work is serialized and sent over the network.
 ##
 
-UPDATE = 'u'
-CHUNK_REQUEST = 'creq'
-CHUNK_RESPONSE = 'cresp'
-NO_CHUNK = 'cfail'
+UPDATE = 'update'
+CHUNK_REQUEST = 'chunk request'
+CHUNK_RESPONSE = 'chunk response'
+NO_CHUNK = 'no chunk'
 
 class Work:
     def __init__(self, type, source, dest, data=None):

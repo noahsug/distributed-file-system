@@ -79,11 +79,9 @@ class Peer(Base):
             else:
                 file.state = ""
         else: # state is 'w'
-            if file.hasLocalChanges:
+            if file.hasLocalChanges and self.dfs_.online:
                 file.latestVersion = file.localVersion.copy()
                 self.network_.fileEdited()
-            else:
-                self.log_.v(fileName + ' closed in write mode, but has no local changes')
             file.state = ""
 
         self.log_.v('-- closed ' + fileName + ', state is now: ' + file.state)
@@ -135,7 +133,7 @@ class Peer(Base):
         self.network_.fileEdited()
         return err.OK
 
-    def listFiles(self, files):
+    def listFiles(self, files=[]):
         while len(files) > 0:
             files.pop()
         for f in self.fileSystem_.list():
@@ -153,6 +151,7 @@ class Peer(Base):
         while self.fileSystem_.exists(newFileName):
             newFileName = newFileName + ".stable"
         self.fileSystem_.copyFile(fileName, newFileName)
+        self.network_.fileEdited()
 
     # save the most recent version of the file locally
     def pin(self, fileName):
@@ -173,7 +172,12 @@ class Peer(Base):
         return err.OK
 
     # join DFS, connecting to the peer at the given addr and port if given
-    def join(self, addr, port):
+    def join(self, addr, port=None):
+        if not port:
+            peer = addr
+            addr = peer.dfs_.addr
+            port = peer.dfs_.port
+
         self.log_.v('-- join')
         status = self.network_.connectTo(DFS(addr, port))
         return status

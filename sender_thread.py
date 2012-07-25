@@ -83,6 +83,7 @@ class SenderThread(NetworkThread):
         return val
 
     def registerConnDFS(self, dfs):
+        self.log_.v('registering new peer: ' + dfs.id.str)
         self.knownPeers_.add(dfs)
 
     def addWork(self, work):

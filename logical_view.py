@@ -40,7 +40,7 @@ class LogicalView(Base):
         return self.fileList_[fileName].getLatestVersion()
 
     def setNewVersion(self, fileName, version):
-        self.fileList_[fileName].setNewVersion(version)
+        self.fileList_[fileName].setNewVersion(version.copy())
 
     def setLocalVersion(self, fileName, numEdits, fileSize, lastEdited):
         self.fileList_[fileName].setLocalVersion(numEdits, fileSize, lastEdited)
