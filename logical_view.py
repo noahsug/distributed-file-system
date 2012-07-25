@@ -27,7 +27,6 @@ class LogicalView(Base):
 
     def delete(self, fileName):
         self.lock_.acquire()
-        #del self.fileList_[fileName]
         self.fileList_[fileName].isDeleted = True
         self.lock_.release()
 
@@ -52,6 +51,5 @@ class LogicalView(Base):
     def getState(self):
         return self.fileList_
 
-    # update the logical view from the given set of files
-    def update(self, files):
-        pass
+    def getFile(self, fileName):
+        return self.fileList_[fileName]

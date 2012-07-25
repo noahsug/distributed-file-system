@@ -73,19 +73,18 @@ class FileSystem(Base):
         return self.logical_.fileList_[fileName].localVersion.equals(self.logical_.fileList_[fileName].latestVersion)
 
     def write(self, fileName, buf, offset, bufsize):
-        if self.isUpToDate(fileName): #if up to date, no conflicts
+        file = self.logical_.fileList_[fileName]
+        if f.state != 'w':
+            self.log_.e('writing to ' + fileName + ' while not in write mode!')
+
+        if file.isOutOfDate(): # conflict, create a second version
+            conflictName = self.resolveConflict(fileName)
+            self.physical_.write(conflictName, buf, offset, bufsize)
+
+        if self.isUpToDate(fileName): # if up to date, no conflicts
             self.physical_.write(fileName, buf, offset, bufsize)
             ver = Version(fileName, self.logical_.getLocalVersion(fileName).numEdits + 1, self.physical_.getNumChunks(fileName), self.physical_.getFileSize(fileName), self.dfs_.id)
             self.logical_.setNewVersion(fileName, ver)
-            return err.OK
-        elif self.logical_.fileList_[fileName].localVersion.isOutOfDate(self.logical_.fileList_[fileName].latestVersion): #local < latest, conflict (update failed)
-            conflictName = self.resolveConflict(fileName)
-            self.physical_.write(conflictName, buf, offset, bufsize)
-            self.add(conflictName)
-            return conflictName
-        else: #local > latest, offline edits
-            self.physical_.write(fileName, buf, offset, bufsize)
-            self.logical_.setLocalVersion(fileName, self.logical_.getLatestVersion(fileName).numEdits + 1, self.physical_.getNumChunks(fileName), self.physical_.getFileSize(fileName), self.dfs_.id)
             return err.OK
 
     def writeChunk(self, fileName, chunkNum, data):
@@ -102,17 +101,31 @@ class FileSystem(Base):
         status = err.OK
         # TODO make threadsafe
         for file in files.values():
-            if file not in self.logical_.fileList_: # new file?
+            if not self.exists(file.fileName):
                 self.add(file.fileName, file.latestVersion.fileSize)
+                self.logical_.getFile(file.fileName).setNewVersion(file.latestVersion)
+                self.log_.v(file.fileName + ' has been CREATED during an update')
+                continue
 
-            localFile = self.logical_.fileList_[file.fileName]
-            if file.isDeleted: # deleted?
+            localFile = self.logical_.getFile(file.fileName)
+            if file.isDeleted and not localFile.isDeleted: # deleted?
                 localFile.isDeleted = True
+                self.log_.v(localFile.fileName + ' has been DELETED during an update')
+                continue
 
-            if localFile.hasLocalChanges() and localFile.isOutOfDate(file): # conflict?
+            if file.latestVersion == localFile.latestVersion and file.hasLocalChanges():
+                # file from a peer that just connected, propagate its local changes
+                file.latestVersion = file.localVersion
+
+            if localFile.hasLocalChanges() and localFile.isOutOfDate(file):
+                # we made local changes while offline and another peer also made changes, conflict!
                 conflictName = self.resolveConflict(file.fileName)
-                self.add(conflictName)
                 status = err.CausedConflict
+
+            elif localFile.hasLocalChanges():
+                # while we were offline we were the only ones to make changes, propagate them now
+                localFile.latestVersion = localFile.localVersion
+
         return status
 
     def beginLocalUpdate(self, fileName):
@@ -148,10 +161,15 @@ class FileSystem(Base):
     ##
 
     def resolveConflict(self, fileName):
-        conflictName = fileName + '.' + self.dfs_.id
+        conflictName = fileName + '.' + self.dfs_.id.str
         while self.physical_.exists(conflictName):
-            conflictName = conflictName + "." + self.dfs_.id
+            conflictName = conflictName + "." + self.dfs_.id.str
 
         self.physical_.copyFile(fileName, conflictName)
+        self.add(conflictName)
+        self.moveMode(self.logical_.getFile(fileName), self.logical_.getFile(conflictName))
         return conflictName
 
+    def moveMode(self, t, f):
+        t.state = f.state
+        f.state = ''

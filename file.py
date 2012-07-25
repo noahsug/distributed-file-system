@@ -48,8 +48,10 @@ class File(Base):
     def hasLocalChanges(self):
         return self.localVersion.numEdits > self.latestVersion.numEdits
 
-    def isOutOfDate(self, otherFile):
-        return self.latestVersion.numEdits < otherFile.latestVersion.numEdits
+    def isOutOfDate(self, otherFile=None):
+        if otherFile:
+            return self.latestVersion.numEdits < otherFile.latestVersion.numEdits
+        return self.localVersion.numEdits < self.latestVersion.numEdits
 
     def __str__(self):
         data = (self.fileName, self.localVersion, self.latestVersion)

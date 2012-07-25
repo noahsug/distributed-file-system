@@ -13,8 +13,17 @@ class Version:
         self.fileSize = fileSize
 
     def equals(self, otherVersion):
-        return (self.fileName == otherVersion.fileName and self.numEdits == otherVersion.numEdits and self.numChunks == otherVersion.numChunks and self.fileSize == otherVersion.fileSize and self.lastEdited == otherVersion.lastEdited)
+        return (self.fileName == otherVersion.fileName and
+                self.numEdits == otherVersion.numEdits and
+                self.fileSize == otherVersion.fileSize and
+                self.lastEdited == otherVersion.lastEdited)
 
     def __str__(self):
         data = (self.numChunks, self.lastEdited, self.numEdits)
         return 'chunks: %d, edited by: %s, # edits: %d' % data
+
+    def __eq__(self, other):
+        return self.equals(other)
+
+    def __ne__(self, other):
+        return !self.equals(other)

@@ -71,7 +71,11 @@ class Peer(Base):
             else:
                 file.state = ""
         else: # state is 'w'
-            self.network_.fileEdited()
+            if file.hasLocalChanges:
+                file.latestVersion = file.localVersion
+                self.network_.fileEdited()
+            else:
+                self.log_.v(fileName + ' closed in write mode, but has no local changes')
             file.state = ""
 
         self.log_.v('closed ' + fileName + ', state is now: ' + file.state)
