@@ -119,8 +119,7 @@ class FileSystem(Base):
 
         if file.isOutOfDate(): # conflict, create a second version
             self.log_.v(fileName + ' is being written to and is out of date. Conflict detected.')
-            conflictName = self.resolveConflict(fileName)
-            self.physical_.write(conflictName, buf, offset, bufsize)
+            fileName = self.resolveConflict(fileName)
 
         self.physical_.write(fileName, buf, offset, bufsize)
         size = self.physical_.getFileSize(fileName)
@@ -254,15 +253,19 @@ class FileSystem(Base):
 
         self.log_.i('WARNING: A conflict was detected with ' + fileName + '. Moving local changes to a new version called ' + conflictName + '.')
 
-        self.physical_.copyFile(fileName, newName)
-        self.add(newName)
-        new = self.logical_.getFile(newName)
+        oldState = self.logical_.getFile(fileName).state
+        oldReadCounter = self.logical_.getFile(fileName).readCounter
+
+        self.physical_.copyFile(fileName, conflictName)
+        self.add(conflictName)
+        new = self.logical_.getFile(conflictName)
         new.ownAllChunks()
         self.deleteLocalCopy(fileName)
-        self.moveMode(self.logical_.getFile(fileName), self.logical_.getFile(conflictName))
-        return conflictName
 
-    def moveMode(self, t, f):
-        t.state = f.state
-        f.state = ''
+        self.logical_.getFile(conflictName).state = oldState
+        self.logical_.getFile(conflictName).readCounter = oldReadCounter
+        self.logical_.getFile(fileName).state = ''
+        self.logical_.getFile(fileName).readCounter = 0
+
+        return conflictName
 
