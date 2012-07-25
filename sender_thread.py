@@ -34,10 +34,10 @@ class SenderThread(NetworkThread):
             self.connectTo(dfs)
 
     def connectTo(self, dfs):
-        self.registerConnDFS(dfs)
         if self.isConnectedTo(dfs):
             self.log_.v('already connected to ' + str(dfs.id))
             return
+        self.registerConnDFS(dfs)
 
         lt = ListenerThread(self.dfs_, self.addWork)
         status = lt.connect(dfs)
