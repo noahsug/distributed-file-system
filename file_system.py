@@ -121,10 +121,12 @@ class FileSystem(Base):
             self.log_.v(fileName + ' is being written to and is out of date. Conflict detected.')
             fileName = self.resolveConflict(fileName)
 
+        file = self.logical_.fileList_[fileName]
         self.physical_.write(fileName, buf, offset, bufsize)
         size = self.physical_.getFileSize(fileName)
         v = file.localVersion.getUpdatedVersion(size, self.dfs_.id.str)
         file.localVersion = v
+        file.ownAllChunks()
         if self.dfs_.online:
             # if we're online, we update both latest and local b/c our changes will propagate immediatly
             file.latestVersion = v.copy()

@@ -83,7 +83,6 @@ def testOfficialUsage():
 
     dv2.listFiles()
     dv2.open('f13.pptx', 'r')
-    dv2.listFiles()
     dv2.read('f13.pptx', [0]*18)
     dv2.close('f13.pptx')
 

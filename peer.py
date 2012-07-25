@@ -145,7 +145,6 @@ class Peer(Base):
 
         if self.fileSystem_.logical_.fileList_[fileName].state is "w":
             self.fileSystem_.write(fileName, buf, offset, bufsize)
-            self.fileSystem_.logical_.getFile(fileName).ownAllChunks()
         else:
             self.log_.i('WARNING: Cannot write to ' + fileName + ' because it is not in write mode. Aborting write....')
             self.log_.w('tried to write to ' + fileName + ' while not in write mode')
