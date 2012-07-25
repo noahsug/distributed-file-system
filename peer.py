@@ -37,6 +37,8 @@ class Peer(Base):
             self.log_.w('tried to open file that doesnt exist physically ' + fileName)
             return err.CannotOpenFile
 
+        self.log_.i('Opening ' + fileName + ' in "' + op + '"...')
+
         if op is "r":
             if exists:
                 if self.fileSystem_.canRead(fileName):
@@ -67,7 +69,7 @@ class Peer(Base):
         self.log_.v('-- opened ' + fileName + ' in ' + op)
         return status
 
-    def close(self, fileName):
+    def close(self, fileName, noLogging=False):
         if not self.fileSystem_.exists(fileName):
             self.log_.w('tried to close ' + fileName + ', which doesnt exist')
             return err.FileNotFound
@@ -76,7 +78,11 @@ class Peer(Base):
         if file.state is "":
             self.log_.v('tried to close ' + fileName + ', but it was already closed')
             return err.FileNotOpen
-        elif file.state is "r":
+
+        if not noLogging:
+            self.log_.i('Closing ' + fileName + '...')
+
+        if file.state is "r":
             if file.readCounter > 0:
                 file.readCounter -= 1
                 if file.readCounter == 0:
@@ -109,14 +115,14 @@ class Peer(Base):
             self.log_.w('tried to read from ' + fileName + ' while not in read mode')
             return err.FileNotOpen
 
-        self.log_.i('read ' + fileName + ':\n' + str(buf))
+        self.log_.i('Read ' + fileName + ':\n' + str(buf))
         return status
 
     def write(self, fileName, buf, offset=0, bufsize=-1):
         if bufsize < 0:
             bufsize = len(buf)
 
-        self.log_.v('-- write ' + fileName)
+        self.log_.i('Writing buffer of size ' + str(bufsize) + ' to ' + fileName + '...')
         if not self.fileSystem_.exists(fileName):
             return err.FileNotFound
 
@@ -134,9 +140,9 @@ class Peer(Base):
             return 1
         file = self.fileSystem_.logical_.getFile(fileName)
         if file.state != '':
-            self.close(fileName)
+            self.close(fileName, noLogging=True)
 
-        self.log_.v('-- delete ' + fileName)
+        self.log_.i('Deleting ' + fileName + '...')
         self.fileSystem_.delete(fileName)
         self.network_.fileEdited()
         return err.OK
@@ -154,19 +160,21 @@ class Peer(Base):
         if not self.fileSystem_.exists(fileName):
             self.log_.w('tried to mark ' + fileName + ' as stable, but doesnt exist')
             return 1
-        self.log_.v('-- mark stable ' + fileName)
+        self.log_.i('Marking ' + fileName + ' as stable...')
         newFileName = fileName + ".stable";
         while self.fileSystem_.exists(newFileName):
             newFileName = newFileName + ".stable"
         self.fileSystem_.copyFile(fileName, newFileName)
-        self.network_.fileEdited()
+        if self.dfs_.online:
+            self.network_.fileEdited()
+            self.network_.waitForPropagation()
 
     # save the most recent version of the file locally
     def pin(self, fileName):
         if not self.fileSystem_.exists(fileName):
             return err.FileNotFound
         # TODO check write / read access
-        self.log_.v('-- pin ' + fileName)
+        self.log_.i('Pinning ' + fileName + '...')
         status = self.updateFile(fileName)
         return status
 
@@ -175,7 +183,7 @@ class Peer(Base):
         if not self.fileSystem_.exists(fileName):
             return err.FileNotFound
         # TODO check write / read access
-        self.log_.v('unpin ' + fileName)
+        self.log_.i('Unpinning ' + fileName + '...')
         self.fileSystem_.deleteLocalCopy(fileName)
         return err.OK
 
@@ -186,21 +194,21 @@ class Peer(Base):
             addr = peer.dfs_.addr
             port = peer.dfs_.port
 
-        self.log_.v('-- join')
+        self.log_.i('Connecting to DFS from starting point ' + addr + ':' + str(port) + '...')
         status = self.network_.connectTo(DFS(addr, port))
         self.network_.waitForPropagation()
         return status
 
     # retire from the system
     def retire(self):
-        self.log_.v('-- retire')
+        self.log_.i('Retiring...')
         self.goOffline()
         return err.OK
 
     # connect to the internet
     def goOnline(self):
         if not self.dfs_.online:
-            self.log_.v('-- go online')
+            self.log_.i('Going online...')
             self.network_.connect()
             self.network_.waitForPropagation()
             self.dfs_.online = True
@@ -211,7 +219,7 @@ class Peer(Base):
     # disconnect from the internet
     def goOffline(self):
         if self.dfs_.online:
-            self.log_.i('-- go offline')
+            self.log_.i('Going offline...')
             self.network_.waitForPropagation()
             self.network_.disconnect()
             self.dfs_.online = False
@@ -221,7 +229,7 @@ class Peer(Base):
 
     # exits the program
     def exit(self):
-        self.log_.v('-- exit')
+        self.log_.i('exiting...')
         self.goOffline()
         fs = self.fileSystem_.getState()
         ns = self.network_.getState()
@@ -255,7 +263,7 @@ class Peer(Base):
         return status
 
     def printInfo(self, files):
-        self.log_.i('files:')
+        self.log_.i('Files:')
         for f in files:
             if not f.isDeleted:
                 self.log_.i('  ' + str(f))

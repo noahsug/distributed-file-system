@@ -8,12 +8,14 @@ from physical_view import PhysicalView
 from logical_view import LogicalView
 import error as err
 import random
+from lock import Lock
 
 class FileSystem(Base):
     def __init__(self, dfs):
         Base.__init__(self, dfs)
         self.physical_ = PhysicalView(dfs)
         self.logical_ = LogicalView(dfs)
+        self.updateLock_ = Lock(dfs)
 
     ##
     # Public API
@@ -27,7 +29,9 @@ class FileSystem(Base):
 
     # returns data from a random chunk from the given list of chunks
     def getRandomChunk(self, fileName, chunks):
+        self.updateLock_.acquire()
         if not self.exists(fileName) or not self.isUpToDate(fileName):
+            self.updateLock_.release()
             return None
 
         missing = []
@@ -37,27 +41,37 @@ class FileSystem(Base):
                 missing.append(i)
 
         if len(missing) == 0:
+            self.updateLock_.release()
             return None
 
         chunkNum = missing[random.randint(0, len(missing) - 1)]
 
         if file.localVersion.numChunks <= chunkNum:
             self.log_.e('requested random chunk of ' + fileName + ', but chunk ' + str(chunkNum) + ' >= ' + str(file.numChunks))
+            self.updateLock_.release()
             return None
         if not file.chunksOwned[chunkNum]:
             self.log_.e('requested random chunk of ' + fileName + ', but chunk ' + str(chunkNum) + ' is not owned!')
+            self.updateLock_.release()
             return None
 
         chunkData = self.physical_.getChunk(fileName, chunkNum)
         if not chunkData:
+            self.updateLock_.release()
             return None
+
+        self.updateLock_.release()
         return (fileName, chunkNum, chunkData)
 
     def getMissingChunks(self, fileName):
+        self.updateLock_.acquire()
         file = self.logical_.getFile(fileName)
         if file.latestVersion.numChunks == file.numChunksOwned:
+            self.updateLock_.release()
             return None
-        return self.logical_.fileList_[fileName].chunksOwned
+        val = self.logical_.fileList_[fileName].chunksOwned
+        self.updateLock_.release()
+        return val
 
     def canRead(self, fileName):
         return self.logical_.fileList_[fileName].state is "" or self.logical_.fileList_[fileName].state is "r"
@@ -115,9 +129,11 @@ class FileSystem(Base):
         return err.OK
 
     def writeChunk(self, fileName, chunkNum, data):
+        self.updateLock_.acquire()
         file = self.logical_.fileList_[fileName]
         if file.chunksOwned[chunkNum]:
             self.log_.v('got chunk ' + str(chunkNum) + ' of ' + fileName + ', but we already have it')
+            self.updateLock_.release()
             return # already has chunk
 
         if not self.physical_.exists(fileName):
@@ -125,10 +141,11 @@ class FileSystem(Base):
 
         self.physical_.writeChunk(fileName, chunkNum, data)
         file.receiveChunk(chunkNum)
+        self.updateLock_.release()
 
     def updateFiles(self, files):
         status = err.OK
-        # TODO make threadsafe
+        self.updateLock_.acquire()
         for file in files.values():
             if file.isDeleted:
                 continue
@@ -168,22 +185,29 @@ class FileSystem(Base):
                 file.latestVersion = file.localVersion.copy()
                 self.log_.v(file.fileName + ' has valid local changes after an update. Now propagating')
 
+        self.updateLock_.release()
         return status
 
     def beginLocalUpdate(self, fileName):
+        self.updateLock_.acquire()
         self.logical_.beginLocalUpdate(fileName)
+        self.updateLock_.release()
 
     def finishLocalUpdate(self, fileName):
+        self.updateLock_.acquire()
         file = self.logical_.fileList_[fileName]
         if file.numChunksOwned > 0:
             file.localVersion = file.latestVersion.copy()
+
         if file.latestVersion.numChunks == file.numChunksOwned:
             self.physical_.trim(fileName, file.latestVersion.fileSize)
+            self.updateLock_.release()
             return err.OK
-        else:
-            self.log_.v('failed to fully update ' + fileName + ': only got ' +
-                        str(file.numChunksOwned) + '/' + str(file.localVersion.numChunks))
-            return err.CannotFullyUpdateFile
+
+        self.log_.v('failed to fully update ' + fileName + ': only got ' +
+                    str(file.numChunksOwned) + '/' + str(file.localVersion.numChunks))
+        self.updateLock_.release()
+        return err.CannotFullyUpdateFile
 
     # read serialized state from disk
     def readState(self):

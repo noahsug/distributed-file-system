@@ -4,8 +4,11 @@
 
 import threading
 
+console = open('.output.log', 'w')
+
 class Logger:
     lock_ = threading.Lock()
+    lastPeer = ''
     verb = ['V', '!!!D', 'W!!', 'E!!!!', '']
     used = [0, 1, 2, 3, 4]
 
@@ -34,7 +37,13 @@ class Logger:
         Logger.lock_.acquire()
         v = Logger.verb[verbosity]
         if not v:
-            print '%s> %s' % (str(self.dfs_.id), msg)
-        else:
-            print '%s> %s # %s: %s' % (str(self.dfs_.id), v, self.tag_, msg)
+            id = '    '
+            if Logger.lastPeer != str(self.dfs_.id):
+                Logger.lastPeer = str(self.dfs_.id)
+                id = '%s> ' % self.dfs_.id
+            msg = '%s%s' % (id, msg)
+            print msg
+
+        msg = '%s> %s # %s: %s' % (str(self.dfs_.id), v, self.tag_, msg)
+        console.write(msg + '\n')
         Logger.lock_.release()

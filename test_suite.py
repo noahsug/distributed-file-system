@@ -4,21 +4,71 @@ import time
 import dfs_state
 import debug
 
-data = '1' * (dfs_state.CHUNK_SIZE + 1)
-data2 = 'abcdefg' * dfs_state.CHUNK_SIZE
 log = debug.Logger('', dfs_state.DFS(' ', 10000))
 
 def changeDevice():
     time.sleep(.5)
 
-
-def testOfflineUsage():
-    import mock_network
+def testOfficialUsage():
+    # Init
     from peer import Peer
+    data = {
+        'f11.txt': None,
+        'f12.docx': None,
+        'f13.pptx': None,
+        'f21.executable': None,
+        'f22.zip': None,
+        'f31.jpg': None
+        }
+
+    for file in data:
+        f = open('files/' + file, 'r')
+        txt = f.read()
+        data[file] = [c for c in txt]
+
+    dv1 = Peer('localhost', 10001)
+    dv1.goOnline()
+    dv2 = Peer('localhost', 10002)
+    dv2.goOnline()
+    dv3 = Peer('localhost', 10003)
+    dv3.goOnline()
+    dv2.join(dv1)
+    dv3.join(dv1)
+
+    def writeData(d, fileName):
+        d.open(fileName, 'w')
+        d.write(fileName, data[fileName])
+        d.close(fileName)
+
+    writeData(dv1, 'f11.txt')
+    writeData(dv1, 'f12.docx')
+    writeData(dv1, 'f13.pptx')
+
+    writeData(dv2, 'f21.executable')
+    writeData(dv2, 'f22.zip')
+
+    writeData(dv3, 'f31.jpg')
+
+    # 1
+    dv1.markStable('f11.txt')
+    dv2.markStable('f21.executable')
+
+    # 2
+    dv1.listFiles()
+    dv2.listFiles()
+
+    dv1.exit()
+    dv2.exit()
+    dv3.exit()
+
+
+def testTwoPeerUsage():
+    from peer import Peer
+    data = ['1', '2', '3'] * dfs_state.CHUNK_SIZE
+    data2 = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'] * dfs_state.CHUNK_SIZE
 
     p1 = Peer('localhost', 10001)
     p2 = Peer('localhost', 10002)
-    p3 = Peer('localhost', 10002)
 
     p1.open('boobs.txt', 'w')
     p1.write('boobs.txt', data)
@@ -122,6 +172,7 @@ def testSerializer():
     print obj
 
 
-testOfflineUsage()
+testOfficialUsage()
+#testTwoPeerUsage()
 #testSerializer()
 #testBasicUsage()
