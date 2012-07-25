@@ -149,7 +149,7 @@ class Peer(Base):
         newFileName = fileName + ".stable";
         while self.fileSystem_.exists(newFileName):
             newFileName = newFileName + ".stable"
-        self.copyFile(fileName, newFileName)
+        self.fileSystem_.copyFile(fileName, newFileName)
 
     # save the most recent version of the file locally
     def pin(self, fileName):
