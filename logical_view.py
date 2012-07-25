@@ -17,7 +17,7 @@ class LogicalView(Base):
 
     def beginLocalUpdate(self, fileName):
         file = self.getFile(fileName)
-        if file.latestVersion != self.localVersion:
+        if file.latestVersion != file.localVersion:
             file.chunksOwned = [False] * file.latestVersion.numChunks
             file.numChunksOwned = 0
 

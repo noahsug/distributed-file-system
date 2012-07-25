@@ -51,13 +51,13 @@ def testOfflineUsage():
     p1.open('boobs.txt', 'r')
     p1.read('boobs.txt', [0]*100)
     p1.goOffline()
-    p1.delete('boobs.txt')
-    p1.delete('boobs.txt.stable')
+ #   p1.delete('boobs.txt')
+#    p1.delete('boobs.txt.stable')
     p1.exit()
 
     p2.goOffline()
-    p2.delete('boobs.txt')
-    p2.delete('boobs.txt.stable')
+#    p2.delete('boobs.txt')
+#    p2.delete('boobs.txt.stable')
     p2.exit()
 
     log.i('Tests Done!')

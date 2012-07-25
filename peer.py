@@ -33,8 +33,8 @@ class Peer(Base):
             return err.CannotOpenFile
 
         status = self.updateFile(fileName)
-        if exists and not self.fileSystem_.exists(fileName):
-            self.log_.w('tried to open file that doesnt exist locally ' + fileName)
+        if exists and not self.fileSystem_.physical_.exists(fileName):
+            self.log_.w('tried to open file that doesnt exist physically ' + fileName)
             return err.CannotOpenFile
 
         if op is "r":
@@ -101,6 +101,9 @@ class Peer(Base):
             return err.FileNotFound
 
         if self.fileSystem_.logical_.fileList_[fileName].state is "r":
+            if not self.fileSystem_.physical_.exists(fileName):
+                self.log_.e('tried to read from ' + fileName + ', which doesnt exist physically')
+                return err.FileNotFound
             status = self.fileSystem_.readIntoBuffer(fileName, buf, offset, bufsize)
         else:
             self.log_.w('tried to read from ' + fileName + ' while not in read mode')
@@ -162,7 +165,7 @@ class Peer(Base):
     def pin(self, fileName):
         if not self.fileSystem_.exists(fileName):
             return err.FileNotFound
-
+        # TODO check write / read access
         self.log_.v('-- pin ' + fileName)
         status = self.updateFile(fileName)
         return status
@@ -171,7 +174,7 @@ class Peer(Base):
     def unpin(self, fileName):
         if not self.fileSystem_.exists(fileName):
             return err.FileNotFound
-
+        # TODO check write / read access
         self.log_.v('unpin ' + fileName)
         self.fileSystem_.deleteLocalCopy(fileName)
         return err.OK
@@ -245,8 +248,10 @@ class Peer(Base):
         status = err.OK
         if not self.fileSystem_.exists(fileName):
             return status
-        if not self.fileSystem_.isUpToDate(fileName) or self.fileSystem_.isMissingChunks(fileName):
+
+        if self.fileSystem_.isMissingChunks(fileName) or not self.fileSystem_.isUpToDate(fileName):
             status = self.network_.getFile(fileName)
+
         return status
 
     def printInfo(self, files):
