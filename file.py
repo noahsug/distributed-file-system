@@ -69,4 +69,4 @@ class File():
 
     def __str__(self):
         data = (self.fileName, self.numChunksOwned, self.localVersion.numChunks, self.localVersion, self.latestVersion)
-        return '%s - %d/%d  local: %s, latest: %s' % data
+        return '%s - %d/%d  local: (%s) latest: (%s)' % data

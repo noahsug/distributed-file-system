@@ -25,8 +25,8 @@ class Version:
         return Version(self.fileName, self.numEdits, self.fileSize, self.lastEdited)
 
     def __str__(self):
-        data = (self.lastEdited, self.numEdits)
-        return '%s %d' % data
+        data = (self.numChunks, self.lastEdited, self.numEdits)
+        return '%d | %s %d' % data
 
     def __eq__(self, other):
         return self.equals(other)
