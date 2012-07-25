@@ -8,7 +8,7 @@ class Version:
     def __init__(self, fileName, numEdits, fileSize, lastEdited):
         self.fileName = fileName
         self.numEdits = numEdits
-        self.numChunks = int(fileSize / dfs_state.CHUNK_SIZE)
+        self.numChunks = int(fileSize / dfs_state.CHUNK_SIZE) + 1
         self.lastEdited = lastEdited
         self.fileSize = fileSize
 
@@ -18,12 +18,15 @@ class Version:
                 self.fileSize == otherVersion.fileSize and
                 self.lastEdited == otherVersion.lastEdited)
 
+    def getUpdatedVersion(self, size, peer):
+        return Version(self.fileName, self.numEdits + 1, size, peer)
+
     def __str__(self):
         data = (self.numChunks, self.lastEdited, self.numEdits)
-        return 'chunks: %d, edited by: %s, # edits: %d' % data
+        return '%d | %s %d' % data
 
     def __eq__(self, other):
         return self.equals(other)
 
     def __ne__(self, other):
-        return !self.equals(other)
+        return not self.equals(other)

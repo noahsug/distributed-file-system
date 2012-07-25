@@ -22,6 +22,10 @@ class PhysicalView(Base):
     def read(self, fileName, buf, offset, bufsize):
         # TODO add thread safetly
         filePath = os.path.join(self.getBasePath(), fileName)
+        size = self.getFileSize(fileName)
+        if offset + bufsize > size:
+            return err.InvalidBufferSize
+
         self.lock_.acquire()
         try:
             f = open(filePath, "r")
@@ -30,7 +34,6 @@ class PhysicalView(Base):
             self.lock_.release()
             return err.FileNotFound
 
-        # TODO return error if offset + bufsize > filesize
         status = err.OK
         f.seek(offset)
         try:

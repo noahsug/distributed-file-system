@@ -2,6 +2,8 @@
 
 import time
 
+data = '123456789' * 10
+
 def testOfflineUsage():
     import mock_network
     from peer import Peer
@@ -9,6 +11,7 @@ def testOfflineUsage():
     p1 = Peer('localhost', 10001, mock_network.Network())
 
     p1.open('boobs.txt', 'w')
+    p1.write('boobs.txt', data, 1, len(data) - 1)
     p1.close('boobs.txt')
 
     p1.listFiles([])

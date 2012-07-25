@@ -74,18 +74,22 @@ class FileSystem(Base):
 
     def write(self, fileName, buf, offset, bufsize):
         file = self.logical_.fileList_[fileName]
-        if f.state != 'w':
+        if file.state != 'w':
             self.log_.e('writing to ' + fileName + ' while not in write mode!')
 
         if file.isOutOfDate(): # conflict, create a second version
             conflictName = self.resolveConflict(fileName)
             self.physical_.write(conflictName, buf, offset, bufsize)
 
-        if self.isUpToDate(fileName): # if up to date, no conflicts
-            self.physical_.write(fileName, buf, offset, bufsize)
-            ver = Version(fileName, self.logical_.getLocalVersion(fileName).numEdits + 1, self.physical_.getNumChunks(fileName), self.physical_.getFileSize(fileName), self.dfs_.id)
-            self.logical_.setNewVersion(fileName, ver)
-            return err.OK
+        self.physical_.write(fileName, buf, offset, bufsize)
+        size = self.physical_.getFileSize(fileName)
+        v = file.localVersion.getUpdatedVersion(size, self.dfs_.id)
+        file.localVersion = v
+        if self.dfs_.online:
+            # if we're online, we update both latest and local b/c our changes will propagate immediatly
+            file.latestVersion = v
+
+        return err.OK
 
     def writeChunk(self, fileName, chunkNum, data):
         if self.logical_.fileList_[fileName].chunksOwned[chunkNum]:

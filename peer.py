@@ -18,7 +18,8 @@ class Peer(Base):
             network = Network(self.dfs_, self.fileSystem_)
         self.network_ = network
 
-        self.loadState()
+# TODO not loading state for now
+#        self.loadState()
 
     ##
     # Public API
