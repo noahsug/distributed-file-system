@@ -67,6 +67,13 @@ def testOfficialUsage():
     dv2.close('f11.txt')
     dv2.close('f12.docx')
 
+    dv1.open('f22.zip', 'r')
+    dv1.read('f22.zip', [0]*1000)
+    dv1.close('f22.zip')
+
+    dv1.listFiles()
+    dv2.listFiles()
+
     dv1.exit()
     dv2.exit()
     dv3.exit()

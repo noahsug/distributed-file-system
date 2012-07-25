@@ -55,7 +55,9 @@ class Network(Base):
         while not self.sender_.isDoneFileFetch():
             time.sleep(.1)
             count += 1
-            if count > 50: # wait at most 5 seconds to get updated file
+            if count > 5:
+                self.log_.i('Downloading ' + fileName + '...')
+            if count > 30: # wait at most 3 seconds to get updated file
                 self.log_.w('getting ' + fileName + ' timed out')
                 break
 
