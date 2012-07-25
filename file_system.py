@@ -27,7 +27,7 @@ class FileSystem(Base):
 
     # returns data from a random chunk from the given list of chunks
     def getRandomChunk(self, fileName, chunks):
-        if not self.isUpToDate(fileName):
+        if not self.exists(fileName) or not self.isUpToDate(fileName):
             return None
 
         missing = []

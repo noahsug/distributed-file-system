@@ -45,6 +45,7 @@ class Network(Base):
         while not self.sender_.isDoneFileFetch():
             time.sleep(.1)
         status = self.fileSystem_.finishLocalUpdate(fileName)
+        self.log_.v('finished getting ' + fileName + ': ' + status)
         return status
 
     def fileEdited(self):
