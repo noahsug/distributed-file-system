@@ -48,6 +48,7 @@ class Peer(Base):
                 buf = [' ']
                 self.fileSystem_.physical_.fillEmptyFile(fileName, 1)
                 self.fileSystem_.add(fileName, 1)
+                self.fileSystem_.logical_.getFile(fileName).ownAllChunks()
                 self.log_.v('creating ' + fileName + ' b/c opened it in write mode for the first time')
             if self.fileSystem_.canWrite(fileName):
                 self.fileSystem_.logical_.fileList_[fileName].state = "w"
@@ -79,7 +80,7 @@ class Peer(Base):
                 file.state = ""
         else: # state is 'w'
             if file.hasLocalChanges:
-                file.latestVersion = file.localVersion
+                file.latestVersion = file.localVersion.copy()
                 self.network_.fileEdited()
             else:
                 self.log_.v(fileName + ' closed in write mode, but has no local changes')
@@ -115,6 +116,7 @@ class Peer(Base):
 
         if self.fileSystem_.logical_.fileList_[fileName].state is "w":
             self.fileSystem_.write(fileName, buf, offset, bufsize)
+            self.fileSystem_.logical_.getFile(fileName).ownAllChunks()
         else:
             self.log_.w('tried to write to ' + fileName + ' while not in write mode')
             return err.FileNotOpenForWrite
@@ -147,9 +149,7 @@ class Peer(Base):
         newFileName = fileName + ".stable";
         while self.fileSystem_.exists(newFileName):
             newFileName = newFileName + ".stable"
-
-        self.fileSystem_.physical_.copyFile(fileName, newFileName)
-        self.fileSystem_.add(newFileName, self.fileSystem_.physical_.getNumChunks(newFileName))
+        self.copyFile(fileName, newFileName)
 
     # save the most recent version of the file locally
     def pin(self, fileName):
@@ -200,9 +200,6 @@ class Peer(Base):
             return err.OK
         else:
             return err.AlreadyOffline
-
-    def query(self, status):
-        return err.OK
 
     # exits the program
     def exit(self):

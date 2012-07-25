@@ -88,7 +88,7 @@ class FileSystem(Base):
         file.localVersion = v
         if self.dfs_.online:
             # if we're online, we update both latest and local b/c our changes will propagate immediatly
-            file.latestVersion = v
+            file.latestVersion = v.copy()
 
         return err.OK
 
@@ -120,16 +120,18 @@ class FileSystem(Base):
 
             if file.latestVersion == localFile.latestVersion and file.hasLocalChanges():
                 # file from a peer that just connected, propagate its local changes
-                file.latestVersion = file.localVersion
+                file.latestVersion = file.localVersion.copy()
 
             if localFile.hasLocalChanges() and localFile.isOutOfDate(file):
                 # we made local changes while offline and another peer also made changes, conflict!
-                conflictName = self.resolveConflict(file.fileName)
+                self.resolveConflict(file.fileName)
+                newVersionOfLocalFile = localFile
+                newVersionOfLocalFile.latestVersion = file.latestVersion.copy()
                 status = err.CausedConflict
 
             elif localFile.hasLocalChanges():
                 # while we were offline we were the only ones to make changes, propagate them now
-                localFile.latestVersion = localFile.localVersion
+                localFile.latestVersion = localFile.localVersion.copy()
 
         return status
 
@@ -140,7 +142,7 @@ class FileSystem(Base):
     def finishLocalUpdate(self, fileName):
         file = self.logical_.fileList_[fileName]
         if file.existsLocally():
-            file.localVersion = file.latestVersion
+            file.localVersion = file.latestVersion.copy()
             return err.OK
         else:
             self.log_.v('failed to fully update ' + fileName + ': only got ' +
@@ -164,20 +166,29 @@ class FileSystem(Base):
     def isDeleted(self, fileName):
         return self.logical_.getFile(fileName).isDeleted
 
+    def copyFile(self, name, newName):
+        self.physical_.copyFile(name, newName)
+        self.add(newName)
+        old = self.logical_.getFile(name)
+        new = self.logical_.getFile(newName)
+        new.localVersion = old.localVersion.copy()
+        new.latestVersion = old.latestVersion.copy()
+        new.numChunksOwned = old.numChunksOwned
+        new.chunksOwned = list(old.chunksOwned)
+
     ##
     # Private methods
     ##
-
     def resolveConflict(self, fileName):
         conflictName = fileName + '.' + self.dfs_.id.str
         while self.physical_.exists(conflictName):
             conflictName = conflictName + "." + self.dfs_.id.str
 
-        self.physical_.copyFile(fileName, conflictName)
-        self.add(conflictName)
+        self.copyFile(fileName, conflictName)
         self.moveMode(self.logical_.getFile(fileName), self.logical_.getFile(conflictName))
         return conflictName
 
     def moveMode(self, t, f):
         t.state = f.state
         f.state = ''
+

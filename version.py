@@ -21,6 +21,9 @@ class Version:
     def getUpdatedVersion(self, size, peer):
         return Version(self.fileName, self.numEdits + 1, size, peer)
 
+    def copy(self):
+        return Version(self.fileName, self.numEdits, self.fileSize, self.lastEdited)
+
     def __str__(self):
         data = (self.numChunks, self.lastEdited, self.numEdits)
         return '%d | %s %d' % data

@@ -13,7 +13,7 @@ class File(Base):
     def __init__(self, fileName, numEdits, fileSize, lastEdited):
         self.fileName = fileName
         self.localVersion = Version(fileName, numEdits, fileSize, lastEdited)
-        self.latestVersion = self.localVersion
+        self.latestVersion = self.localVersion.copy()
 
         numChunks = int(fileSize / dfs_state.CHUNK_SIZE)
         self.numChunksOwned = 0
@@ -21,6 +21,11 @@ class File(Base):
         self.state = ""
         self.readCounter = 0
         self.isDeleted = False
+
+    def ownAllChunks(self):
+        numChunks = self.localVersion.numChunks
+        self.chunksOwned = [True] * numChunks
+        self.numChunksOwned = numChunks
 
     def existsLocally(self):
         return self.numChunksTotal == self.numChunksOwned
@@ -33,8 +38,8 @@ class File(Base):
         self.numChunksOwned += 1
 
     def setNewVersion(self, version):
-        self.localVersion = version
-        self.latestVersion = version
+        self.localVersion = version.copy()
+        self.latestVersion = version.copy()
 
     def setLocalVersion(self, numEdits, fileSize, lastEdited):
         self.localVersion = Version(self.fileName, numEdits, fileSize, lastEdited)
@@ -54,5 +59,5 @@ class File(Base):
         return self.localVersion.numEdits < self.latestVersion.numEdits
 
     def __str__(self):
-        data = (self.fileName, self.localVersion, self.latestVersion)
-        return '%s - local: (%s), latest: (%s)' % data
+        data = (self.fileName, self.localVersion.numChunks, self.numChunksOwned, self.localVersion, self.latestVersion)
+        return '%s - %d/%d  local: (%s) latest: (%s)' % data
