@@ -50,7 +50,6 @@ class Network(Base):
             return err.CannotFullyUpdateFile
 
         self.log_.v('attempting to get ' + fileName)
-
         self.fileSystem_.beginLocalUpdate(fileName)
         self.sender_.beginFileFetch(fileName)
         count = 0
@@ -69,6 +68,9 @@ class Network(Base):
         if not self.dfs_.online:
             return
         self.sender_.updateAll()
+
+    def editPropagated(self):
+        return self.sender_.editPropagated()
 
     def getState(self):
         if not self.sender_:

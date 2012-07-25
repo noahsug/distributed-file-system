@@ -54,8 +54,10 @@ class SenderThread(NetworkThread):
         self.addUpdateWork(listener)
 
     def updateAll(self):
+        self.peerLock_.acquire()
         for lt in self.listeners_:
             self.addUpdateWork(lt)
+        self.peerLock_.release()
 
     def beginFileFetch(self, fileName):
         if len(self.fileFetchStatus) > 0:
@@ -69,6 +71,11 @@ class SenderThread(NetworkThread):
 
         for lt in ltList:
             self.addChunkRequestWork(lt, fileName)
+
+    def editPropagated(self):
+        # due to time constraints, I'm using this rather simple implementation
+        time.sleep(.5)
+        return True
 
     def isConnectedTo(self, dfs):
         if dfs == self.dfs_:

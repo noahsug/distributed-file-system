@@ -9,7 +9,7 @@ class Version:
         self.fileName = fileName
         self.numEdits = numEdits
         self.numChunks = int(fileSize / dfs_state.CHUNK_SIZE) + 1
-        self.lastEdited = lastEdited
+        self.lastEdited = str(lastEdited)
         self.fileSize = fileSize
 
     def equals(self, otherVersion):

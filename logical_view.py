@@ -22,7 +22,7 @@ class LogicalView(Base):
 
     def add(self, fileName, fileSize):
         self.lock_.acquire()
-        f = File(fileName, 1, fileSize, self.dfs_.id)
+        f = File(fileName, 1, fileSize, self.dfs_.id.str)
         self.fileList_[fileName] = f
         self.lock_.release()
 

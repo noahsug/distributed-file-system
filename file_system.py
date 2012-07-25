@@ -105,7 +105,7 @@ class FileSystem(Base):
 
         self.physical_.write(fileName, buf, offset, bufsize)
         size = self.physical_.getFileSize(fileName)
-        v = file.localVersion.getUpdatedVersion(size, self.dfs_.id)
+        v = file.localVersion.getUpdatedVersion(size, self.dfs_.id.str)
         file.localVersion = v
         if self.dfs_.online:
             # if we're online, we update both latest and local b/c our changes will propagate immediatly
@@ -153,6 +153,10 @@ class FileSystem(Base):
                 status = err.CausedConflict
 
             if localFile.isOutOfDate(file):
+                if localFile.latestVersion.numEdits == file.latestVersion.numEdits:
+                    self.log_.w(localFile.fileName + ' have same # of edits, yet is out of date: ' +
+                                str(localFile.latestVersion.numEdits) + ', ' + str(file.latestVersion.numEdits) + ', ' +
+                                localFile.latestVersion.lastEdited + ', ' + file.latestVersion.lastEdited)
                 self.log_.v('updated ' + localFile.fileName)
                 localFile.latestVersion = file.latestVersion.copy()
 

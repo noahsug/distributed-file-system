@@ -53,7 +53,13 @@ class File():
 
     def isOutOfDate(self, otherFile=None):
         if otherFile:
-            return self.latestVersion.numEdits < otherFile.latestVersion.numEdits
+            if self.latestVersion.numEdits < otherFile.latestVersion.numEdits:
+                return True
+            elif self.latestVersion.numEdits == otherFile.latestVersion.numEdits and self.latestVersion != otherFile.latestVersion:
+                # This is a rare race condition. We will loose data here, but it shouldn't happen often.
+                return self.latestVersion.lastEdited < otherFile.latestVersion.lastEdited
+            else:
+                return False
         return self.localVersion.numEdits < self.latestVersion.numEdits
 
     def __str__(self):

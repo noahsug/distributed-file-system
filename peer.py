@@ -1,6 +1,7 @@
 ##
 # A node in the distributed p2p file system that runs on a device
 ##
+import time
 
 from network import Network
 import error as err
@@ -193,6 +194,8 @@ class Peer(Base):
         if not self.dfs_.online:
             self.log_.v('-- go online')
             self.network_.connect()
+            while not self.network_.editPropagated:
+                time.sleep(.1)
             self.dfs_.online = True
             return err.OK
         else:
@@ -202,6 +205,8 @@ class Peer(Base):
     def goOffline(self):
         if self.dfs_.online:
             self.log_.v('-- go offline')
+            while not self.network_.editPropagated():
+                time.sleep(.1)
             self.network_.disconnect()
             self.dfs_.online = False
             return err.OK
