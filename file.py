@@ -13,7 +13,7 @@ class File():
         self.localVersion = Version(fileName, numEdits, fileSize, lastEdited)
         self.latestVersion = self.localVersion.copy()
 
-        numChunks = int(fileSize / dfs_state.CHUNK_SIZE)
+        numChunks = int(fileSize / dfs_state.CHUNK_SIZE) + 1
         self.numChunksOwned = 0
         self.chunksOwned = [False] * numChunks
         self.state = ""

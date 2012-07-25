@@ -126,7 +126,7 @@ class Peer(Base):
             self.log_.w('tried to read from ' + fileName + ' while not in read mode')
             return err.FileNotOpen
 
-        self.log_.i('Read ' + fileName + ':\n      ' + str(buf))
+        self.log_.i('Read ' + fileName + ':\n"""\n' + ''.join(buf) + '\n"""')
         return status
 
     def write(self, fileName, buf, offset=0, bufsize=-1):

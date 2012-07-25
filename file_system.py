@@ -39,6 +39,10 @@ class FileSystem(Base):
             if not hasChunk and file.chunksOwned[i]:
                 missing.append(i)
 
+        self.log_.v('Their chunks status: ' + str(chunks))
+        self.log_.v('My chunk status: ' + str(file.chunksOwned))
+        self.log_.v('Resulting options: ' + str(missing))
+
         if len(missing) == 0:
             self.updateLock_.release()
             return None
