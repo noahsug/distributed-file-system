@@ -123,10 +123,15 @@ class Peer(Base):
                 self.log_.i('WARNING: ' + fileName + ' could not be retreived from the system. You are reading an out of date file.')
             status = self.fileSystem_.readIntoBuffer(fileName, buf, offset, bufsize)
         else:
+            self.log_.i('WARNING: Cannot read from ' + fileName + ' because it is not in read mode. Aborting read....')
             self.log_.w('tried to read from ' + fileName + ' while not in read mode')
             return err.FileNotOpen
 
-        self.log_.i('Read ' + fileName + ':\n"""\n' + ''.join(buf) + '\n"""')
+        try:
+            text = ''.join(buf)
+        except Exception:
+            text = str(buf)
+        self.log_.i('Read ' + fileName + ':\n"""\n' + text + '\n"""')
         return status
 
     def write(self, fileName, buf, offset=0, bufsize=-1):
@@ -135,12 +140,14 @@ class Peer(Base):
 
         self.log_.i('Writing buffer of size ' + str(bufsize) + ' to ' + fileName + '...')
         if not self.fileSystem_.exists(fileName):
+            self.log_.i('WARNING: Cannot write to ' + fileName + ' because it is not in write mode. Aborting write....')
             return err.FileNotFound
 
         if self.fileSystem_.logical_.fileList_[fileName].state is "w":
             self.fileSystem_.write(fileName, buf, offset, bufsize)
             self.fileSystem_.logical_.getFile(fileName).ownAllChunks()
         else:
+            self.log_.i('WARNING: Cannot write to ' + fileName + ' because it is not in write mode. Aborting write....')
             self.log_.w('tried to write to ' + fileName + ' while not in write mode')
             return err.FileNotOpenForWrite
         return err.OK

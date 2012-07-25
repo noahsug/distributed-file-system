@@ -67,14 +67,28 @@ def testOfficialUsage():
     dv2.close('f11.txt')
     dv2.close('f12.docx')
 
-    dv1.open('f22.zip', 'r')
-    dv1.read('f22.zip', [0]*1000)
-    dv1.close('f22.zip')
+#    dv1.open('f22.zip', 'r')
+#    dv1.read('f22.zip', [0]*1000)
+#    dv1.close('f22.zip')
 
     dv1.listFiles()
     dv2.listFiles()
 
     dv1.exit()
+
+    dv2.open('f13.pptx', 'w')
+    dv2.write('f13.pptx', [c for c in 'heeeeey gguyyyyzzzz'])
+    dv2.close('f13.pptx.p2')
+
+    dv2.listFiles()
+    dv2.open('f13.pptx', 'r')
+    dv2.read('f13.pptx', [0]*18)
+    dv2.close('f13.pptx')
+
+    dv2.open('f13.pptx.p2', 'r')
+    dv2.read('f13.pptx.p2', [0]*18)
+    dv2.close('f13.pptx.p2')
+
     dv2.exit()
     dv3.exit()
 

@@ -136,7 +136,7 @@ class SenderThread(NetworkThread):
         if status < 0:
             self.peerLock_.acquire()
             self.log_.v('trying to send work, but ' + lt.getConnDFS().id.str + ' has disconnected')
-            self.removeListener()
+            self.removeListener(lt)
             self.peerLock_.release()
 
     def removeListener(self, lt):

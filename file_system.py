@@ -104,6 +104,7 @@ class FileSystem(Base):
 
     def deleteLocalCopy(self, fileName):
         file = self.logical_.getFile(fileName)
+        file.localVersion = file.latestVersion.copy()
         file.ownNoChunks()
         self.physical_.deleteFile(fileName)
 
@@ -252,7 +253,12 @@ class FileSystem(Base):
             conflictName = conflictName + "." + self.dfs_.id.str
 
         self.log_.i('WARNING: A conflict was detected with ' + fileName + '. Moving local changes to a new version called ' + conflictName + '.')
-        self.copyFile(fileName, conflictName)
+
+        self.physical_.copyFile(fileName, newName)
+        self.add(newName)
+        new = self.logical_.getFile(newName)
+        new.ownAllChunks()
+        self.deleteLocalCopy(fileName)
         self.moveMode(self.logical_.getFile(fileName), self.logical_.getFile(conflictName))
         return conflictName
 
