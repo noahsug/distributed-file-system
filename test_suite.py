@@ -18,6 +18,8 @@ def testOfflineUsage():
     p1.read('boobs.txt', [0]*90)
     p1.close('boobs.txt')
 
+    p1.markStable('boobs.txt')
+
     p1.delete('boobs.txt')
 
     p1.open('boobs.txt', 'r')
