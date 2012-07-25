@@ -51,3 +51,6 @@ class File(Base):
     def isOutOfDate(self, otherFile):
         return self.latestVersion.numEdits < otherFile.latestVersion.numEdits
 
+    def __str__(self):
+        data = (self.fileName, self.localVersion, self.latestVersion)
+        return '%s - local: (%s), latest: (%s)' % data

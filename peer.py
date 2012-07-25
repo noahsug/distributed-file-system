@@ -41,9 +41,9 @@ class Peer(Base):
         elif op is "w":
             if not exists:
                 buf = [' ']
-                self.fileSystem_.physical_.write(fileName, buf, 0, 1)
+                self.fileSystem_.physical_.fillEmptyFile(fileName, 1)
                 self.fileSystem_.add(fileName, 1)
-                self.log_.v('opened ' + fileName + ' in write mode for the first time, creating file')
+                self.log_.v('creating ' + fileName + ' b/c opened it in write mode for the first time')
             if self.fileSystem_.canWrite(fileName):
                 self.fileSystem_.logical_.fileList_[fileName].state = "w"
             else:
@@ -110,7 +110,11 @@ class Peer(Base):
 
     def listFiles(self, files):
         self.log_.v('listFiles')
-        files.fromlist(self.fileSystem_.list())
+        while len(files) > 0:
+            files.pop()
+        for f in self.fileSystem_.list():
+            files.append(f)
+        self.printInfo(files)
         return err.OK
 
     # mark the file as stable
@@ -184,6 +188,7 @@ class Peer(Base):
         self.goOffline()
         fs = self.fileSystem_.getState()
         ns = self.network_.getState()
+        self.log_.v('writing ' + str(len(fs)) + ' files and ' + str(len(ns)) + ' peers to disk')
         state = (fs, ns)
         s = serializer.serialize(state)
         self.fileSystem_.writeState(s)
@@ -209,3 +214,9 @@ class Peer(Base):
         if not self.fileSystem_.isUpToDate(fileName):
             status = self.network_.getFile(fileName)
         return status
+
+    def printInfo(self, files):
+        self.log_.v('-- Files')
+        for f in files:
+            self.log_.v(str(f))
+        self.log_.v('-- / end files')

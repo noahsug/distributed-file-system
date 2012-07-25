@@ -8,6 +8,12 @@ def testOfflineUsage():
 
     p1 = Peer('localhost', 10001, mock_network.Network())
 
+    p1.open('boobs.txt', 'w')
+    p1.close('boobs.txt')
+
+    p1.listFiles([])
+    p1.exit()
+
 def testBasicUsage():
     from peer import Peer
 

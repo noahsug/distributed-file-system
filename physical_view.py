@@ -22,10 +22,12 @@ class PhysicalView(Base):
     def read(self, fileName, buf, offset, bufsize):
         # TODO add thread safetly
         filePath = os.path.join(self.getBasePath(), fileName)
+        self.lock_.acquire()
         try:
             f = open(filePath, "r")
         except Exception, ex:
             self.log_.e('error opening file in read mode ' + filePath + ': ' + str(ex))
+            self.lock_.release()
             return err.FileNotFound
 
         # TODO return error if offset + bufsize > filesize
@@ -39,11 +41,13 @@ class PhysicalView(Base):
             self.log_.e('failed to read ' + filePath + ' from ' + str(offset) + ' to ' + str(offset + bufsize) + ': ' + str(ex))
             status = err.CannotReadFile
         f.close()
+        self.lock_.release()
         return status
 
     def write(self, fileName, buf, offset, bufsize):
         status = err.OK
         size = self.getFileSize(fileName)
+        self.lock_.acquire()
         f = open(os.path.join(self.getBasePath(), fileName), "r+")
         if(offset > size):
             f.seek(0, 2)
@@ -57,6 +61,7 @@ class PhysicalView(Base):
             self.log_.e('failed to write ' + fileName + ' from ' + str(offset) + ' to ' + str(offset + bufsize) + ': ' + str(ex))
             status = err.CannotReadFile
         f.close()
+        self.lock_.release()
         return status
 
     def getChunk(self, fileName, chunk):
@@ -115,7 +120,6 @@ class PhysicalView(Base):
         f = open(path, 'w')
         f.write(serializedState)
         f.close()
-        self.log_.v('writing state to disk at ' + path)
         self.lock_.release()
 
     def readState(self):
@@ -150,7 +154,7 @@ class PhysicalView(Base):
         self.lock_.acquire()
         path = os.path.join(self.getBasePath(), fileName)
         if not os.path.isfile(path):
-            w = open(path, "w")
+            w = open(path, 'w')
             w.write(' ' * size) # fill the file with empty space
             w.close()
         self.lock_.release()
