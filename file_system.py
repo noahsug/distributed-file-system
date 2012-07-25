@@ -161,6 +161,9 @@ class FileSystem(Base):
     def exists(self, fileName):
         return self.logical_.exists(fileName)
 
+    def isDeleted(self, fileName):
+        return self.logical_.getFile(fileName).isDeleted
+
     ##
     # Private methods
     ##

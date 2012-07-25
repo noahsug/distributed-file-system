@@ -25,9 +25,13 @@ class Peer(Base):
     # Public API
     ##
     def open(self, fileName, op):
-        status = self.updateFile(fileName)
         exists = self.fileSystem_.exists(fileName)
 
+        if exists and self.fileSystem_.isDeleted(fileName):
+            self.log_.w('tried to open deleted file ' + fileName)
+            return err.CannotOpenFile
+
+        status = self.updateFile(fileName)
         if op is "r":
             if exists:
                 if self.fileSystem_.canRead(fileName):
@@ -64,7 +68,7 @@ class Peer(Base):
 
         file = self.fileSystem_.logical_.fileList_[fileName]
         if file.state is "":
-            self.log_.v('tried to closed ' + fileName + ', but it was already closed')
+            self.log_.v('tried to close ' + fileName + ', but it was already closed')
             return err.FileNotOpen
         elif file.state is "r":
             if file.readCounter > 0:
@@ -117,6 +121,13 @@ class Peer(Base):
         return err.OK
 
     def delete(self, fileName):
+        if not self.fileSystem_.exists(fileName) or self.fileSystem_.isDeleted(fileName):
+            self.log_.w(fileName + ' doest exist or is already deleted')
+            return 1
+        file = self.fileSystem_.logical_.getFile(fileName)
+        if file.state != '':
+            file.close()
+
         self.log_.v('-- delete ' + fileName)
         self.fileSystem_.delete(fileName)
         self.network_.fileEdited()
@@ -229,5 +240,6 @@ class Peer(Base):
     def printInfo(self, files):
         self.log_.v('-- List files')
         for f in files:
-            self.log_.v(str(f))
+            if not f.isDeleted:
+                self.log_.v(str(f))
         self.log_.v('-- /List files')
