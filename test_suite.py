@@ -77,11 +77,13 @@ def testOfficialUsage():
     dv1.exit()
 
     dv2.open('f13.pptx', 'w')
+    dv2.listFiles()
     dv2.write('f13.pptx', [c for c in 'heeeeey gguyyyyzzzz'])
     dv2.close('f13.pptx.p2')
 
     dv2.listFiles()
     dv2.open('f13.pptx', 'r')
+    dv2.listFiles()
     dv2.read('f13.pptx', [0]*18)
     dv2.close('f13.pptx')
 

@@ -18,8 +18,8 @@ class LogicalView(Base):
     def beginLocalUpdate(self, fileName):
         file = self.getFile(fileName)
         if file.latestVersion != file.localVersion:
-            file.chunksOwned = [False] * file.latestVersion.numChunks
-            file.numChunksOwned = 0
+            file.localVersion = file.latestVersion.copy()
+            file.ownNoChunks()
 
     def add(self, fileName, fileSize):
         self.lock_.acquire()

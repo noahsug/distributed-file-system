@@ -117,7 +117,7 @@ class FileSystem(Base):
         if file.state != 'w':
             self.log_.e('writing to ' + fileName + ' while not in write mode!')
 
-        if file.isOutOfDate(): # conflict, create a second version
+        if file.isOutOfDate() or not file.existsLocally(): # conflict, create a second version
             self.log_.v(fileName + ' is being written to and is out of date. Conflict detected.')
             fileName = self.resolveConflict(fileName)
 
@@ -156,6 +156,7 @@ class FileSystem(Base):
             if not self.exists(file.fileName):
                 self.add(file.fileName, file.latestVersion.fileSize)
                 self.logical_.getFile(file.fileName).setNewVersion(file.latestVersion)
+                self.logical_.getFile(file.fileName).ownNoChunks()
                 self.log_.v(file.fileName + ' has been CREATED during an update')
 
             localFile = self.logical_.getFile(file.fileName)
