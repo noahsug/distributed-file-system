@@ -22,7 +22,6 @@ class FileSystem(Base):
     ##
     def loadFromState(self, state):
         self.logical_.update(state)
-        # TODO: do a check to make sure the physical view matches the logical view
 
     def list(self):
         return self.logical_.getFileList()
@@ -248,6 +247,7 @@ class FileSystem(Base):
         while self.physical_.exists(conflictName):
             conflictName = conflictName + "." + self.dfs_.id.str
 
+        self.log_.i('WARNING: A conflict was detected with ' + fileName + '. Moving local changes to a new version called ' + conflictName + '.')
         self.copyFile(fileName, conflictName)
         self.moveMode(self.logical_.getFile(fileName), self.logical_.getFile(conflictName))
         return conflictName

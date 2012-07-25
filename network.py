@@ -22,7 +22,6 @@ class Network(Base):
     # Public API
     ##
     def loadFromState(self, peers):
-        self.log_.v('loaded ' + str(len(peers)) + ' peers from disk')
         self.knownPeers_ = peers
 
     def connect(self):

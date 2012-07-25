@@ -50,12 +50,22 @@ def testOfficialUsage():
     writeData(dv3, 'f31.jpg')
 
     # 1
+    dv1.listFiles()
+    dv2.listFiles()
     dv1.markStable('f11.txt')
     dv2.markStable('f21.executable')
 
     # 2
     dv1.listFiles()
     dv2.listFiles()
+
+    # 3
+    dv2.open('f11.txt', 'r')
+    dv2.open('f12.docx', 'r')
+    dv2.read('f11.txt', [0]*200)
+    dv2.read('f12.docx', [0]*200)
+    dv2.close('f11.txt')
+    dv2.close('f12.docx')
 
     dv1.exit()
     dv2.exit()

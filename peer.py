@@ -29,25 +29,26 @@ class Peer(Base):
         exists = self.fileSystem_.exists(fileName)
 
         if exists and self.fileSystem_.isDeleted(fileName):
-            self.log_.w('tried to open deleted file ' + fileName)
+            self.log_.i('WARNING: Trying to open non-existant file ' + fileName + ' in "r". Aborting open...')
             return err.CannotOpenFile
 
         status = self.updateFile(fileName)
-        if exists and not self.fileSystem_.physical_.exists(fileName):
-            self.log_.w('tried to open file that doesnt exist physically ' + fileName)
-            return err.CannotOpenFile
-
         self.log_.i('Opening ' + fileName + ' in "' + op + '"...')
 
         if op is "r":
+            if exists and not self.fileSystem_.physical_.exists(fileName):
+                self.log_.i('WARNING: Unable to reteived ' + fileName + '. Aborting open...')
+                return err.CannotOpenFile
+
             if exists:
                 if self.fileSystem_.canRead(fileName):
                     self.fileSystem_.logical_.fileList_[fileName].readCounter += 1
                     self.fileSystem_.logical_.fileList_[fileName].state = "r"
                 else:
-                    self.log_.w('cant open ' + fileName + ' in read mode')
+                    self.log_.i('WARNING: Trying to open ' + fileName + ' in "r", but it is already open in "w". Aborting open...')
                     return err.CannotOpenFile
             else:
+                self.log_.i('WARNING: Trying to open non-existant file ' + fileName + ' in "r". Aborting open...')
                 self.log_.w('tried to open ' + fileName + ' in read mode, but it doesnt exist')
                 return err.FileNotFound
         elif op is "w":
@@ -58,25 +59,28 @@ class Peer(Base):
                 self.fileSystem_.logical_.getFile(fileName).ownAllChunks()
                 self.log_.v('creating ' + fileName + ' b/c opened it in write mode for the first time')
             if self.fileSystem_.canWrite(fileName):
+                if not self.fileSystem_.physical_.exists(fileName):
+                    self.fileSystem_.physical_.fillEmptyFile(fileName, 1)
                 self.fileSystem_.logical_.fileList_[fileName].state = "w"
             else:
-                self.log_.w('cant open ' + fileName + ' in write mode')
+                self.log_.i('WARNING: Trying to open ' + fileName + ' in "w", but it is already open. Aborting open...')
                 return err.CannotOpenFile
         else:
-            self.log_.w('tried to open in known mode ' + op)
+            self.log_.i('WARNING: Trying to open ' + fileName + ' in unknown mode "' + op + '". Aborting open...')
             return err.InvalidOp
 
         self.log_.v('-- opened ' + fileName + ' in ' + op)
         return status
 
     def close(self, fileName, noLogging=False):
-        if not self.fileSystem_.exists(fileName):
-            self.log_.w('tried to close ' + fileName + ', which doesnt exist')
+        if not self.fileSystem_.exists(fileName) or self.fileSystem_.isDeleted(fileName):
+            self.log_.i('WARNING: Trying to close non-existant file ' + fileName + ' in "r". Aborting close...')
+            self.log_.w('tried to close ' + fileName + ', which doesnt exist: ' + str(self.fileSystem_.exists(fileName)))
             return err.FileNotFound
 
         file = self.fileSystem_.logical_.fileList_[fileName]
         if file.state is "":
-            self.log_.v('tried to close ' + fileName + ', but it was already closed')
+            self.log_.i('WARNING: Trying to close ' + fileName + ', but it is already closed. Aborting close...')
             return err.FileNotOpen
 
         if not noLogging:
@@ -103,19 +107,26 @@ class Peer(Base):
             bufsize = len(buf)
 
         if not self.fileSystem_.exists(fileName):
+            self.log_.i('WARNING: Unable to retreive ' + fileName + '. Aborting read...')
             self.log_.w('tried to read from ' + fileName + ', which doesnt exist')
             return err.FileNotFound
 
         if self.fileSystem_.logical_.fileList_[fileName].state is "r":
             if not self.fileSystem_.physical_.exists(fileName):
+                self.log_.i('WARNING: Unable to retrieve ' + fileName + '. Aborting read...')
                 self.log_.e('tried to read from ' + fileName + ', which doesnt exist physically')
                 return err.FileNotFound
+
+            if self.fileSystem_.isMissingChunks(fileName):
+                self.log_.i('WARNING: ' + fileName + ' was not fully retreived. You are reading a partially downloaded file.')
+            elif self.fileSystem_.logical_.getFile(fileName).isOutOfDate():
+                self.log_.i('WARNING: ' + fileName + ' could not be retreived from the system. You are reading an out of date file.')
             status = self.fileSystem_.readIntoBuffer(fileName, buf, offset, bufsize)
         else:
             self.log_.w('tried to read from ' + fileName + ' while not in read mode')
             return err.FileNotOpen
 
-        self.log_.i('Read ' + fileName + ':\n' + str(buf))
+        self.log_.i('Read ' + fileName + ':\n      ' + str(buf))
         return status
 
     def write(self, fileName, buf, offset=0, bufsize=-1):
@@ -249,8 +260,11 @@ class Peer(Base):
             except Exception, ex:
                 self.log_.e('found state, but failed to deserialize: ' + str(ex))
                 return
-            self.fileSystem_.loadFromState(fs)
-            self.network_.loadFromState(ns)
+
+            if len(fs) + len(ns) > 0:
+                self.log_.i('Loaded ' + str(len(fs)) + ' files and ' + str(len(ns)) + ' device addresses from state')
+                self.fileSystem_.loadFromState(fs)
+                self.network_.loadFromState(ns)
 
     def updateFile(self, fileName):
         status = err.OK
