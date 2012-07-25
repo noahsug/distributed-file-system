@@ -36,8 +36,6 @@ def testOfflineUsage():
 
     p2.goOnline()
     p2.join(p1)
-    time.sleep(1)
-
     p2.listFiles()
     p2.open('boobs.txt', 'w')
     p2.write('boobs.txt', data2, 10)
@@ -46,7 +44,8 @@ def testOfflineUsage():
     p2.goOffline()
 
     p1.listFiles()
-
+    p1.open('boobs.txt', 'r')
+    p1.read('boobs.txt', [0]*100)
     p1.goOffline()
     p1.delete('boobs.txt')
     p1.delete('boobs.txt.stable')

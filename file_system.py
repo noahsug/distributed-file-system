@@ -31,17 +31,16 @@ class FileSystem(Base):
             return None
 
         missing = []
+        file = self.logical_.getFile(fileName)
         for i, hasChunk in enumerate(chunks):
-            if not hasChunk:
+            if not hasChunk and file.chunksOwned[i]:
                 missing.append(i)
 
         if len(missing) == 0:
-            self.log_.e('requested random chunk of ' + fileName + ', but none are missing!')
             return None
 
         chunkNum = missing[random.randint(0, len(missing) - 1)]
 
-        file = self.logical_.getFile(fileName)
         if file.localVersion.numChunks <= chunkNum:
             self.log_.e('requested random chunk of ' + fileName + ', but chunk ' + str(chunkNum) + ' >= ' + str(file.numChunks))
             return None
@@ -114,15 +113,16 @@ class FileSystem(Base):
         return err.OK
 
     def writeChunk(self, fileName, chunkNum, data):
-        if self.logical_.fileList_[fileName].chunksOwned[chunkNum]:
+        file = self.logical_.fileList_[fileName]
+        if file.chunksOwned[chunkNum]:
             self.log_.v('got chunk ' + str(chunkNum) + ' of ' + fileName + ', but we already have it')
             return # already has chunk
 
         if not self.physical_.exists(fileName):
-            self.physical_.fillEmptyFile(fileName, self.logical_.fileList_[fileName].latestVersion.fileSize)
+            self.physical_.fillEmptyFile(fileName, file.latestVersion.fileSize)
 
         self.physical_.writeChunk(fileName, chunkNum, data)
-        self.logical_.fileList_[fileName].receiveChunk(chunkNum)
+        file.receiveChunk(chunkNum)
 
     def updateFiles(self, files):
         status = err.OK
@@ -169,14 +169,14 @@ class FileSystem(Base):
         return status
 
     def beginLocalUpdate(self, fileName):
-        if self.physical_.exists(fileName):
-            self.deleteLocalCopy(fileName)
         self.logical_.beginLocalUpdate(fileName)
 
     def finishLocalUpdate(self, fileName):
         file = self.logical_.fileList_[fileName]
-        if file.latestVersion.numChunks == file.numChunksOwned:
+        if file.numChunksOwned > 0:
             file.localVersion = file.latestVersion.copy()
+        if file.latestVersion.numChunks == file.numChunksOwned:
+            self.physical_.trim(fileName, file.latestVersion.fileSize)
             return err.OK
         else:
             self.log_.v('failed to fully update ' + fileName + ': only got ' +

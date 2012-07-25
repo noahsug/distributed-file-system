@@ -6,8 +6,8 @@ import threading
 
 class Logger:
     lock_ = threading.Lock()
-    verb = ['V', '!!!D', 'W!!', 'E!!!!']
-    used = [0, 1, 2, 3]
+    verb = ['V', '!!!D', 'W!!', 'E!!!!', '']
+    used = [0, 1, 2, 3, 4]
 
     def __init__(self, tag, dfs):
         self.tag_ = tag
@@ -25,10 +25,16 @@ class Logger:
     def e(self, msg):
         self.log(3, msg)
 
+    def i(self, msg):
+        self.log(4, msg)
+
     def log(self, verbosity, msg):
         if not verbosity in Logger.used:
             return
         Logger.lock_.acquire()
         v = Logger.verb[verbosity]
-        print '%s> %s # %s: %s' % (str(self.dfs_.id), v, self.tag_, msg)
+        if not v:
+            print '%s> %s' % (str(self.dfs_.id), msg)
+        else:
+            print '%s> %s # %s: %s' % (str(self.dfs_.id), v, self.tag_, msg)
         Logger.lock_.release()

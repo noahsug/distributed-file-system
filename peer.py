@@ -102,7 +102,7 @@ class Peer(Base):
             self.log_.w('tried to read from ' + fileName + ' while not in read mode')
             return err.FileNotOpen
 
-        self.log_.v('-- read ' + fileName + ': ' + str(buf))
+        self.log_.i('read ' + fileName + ':\n' + str(buf))
         return status
 
     def write(self, fileName, buf, offset=0, bufsize=-1):
@@ -127,7 +127,7 @@ class Peer(Base):
             return 1
         file = self.fileSystem_.logical_.getFile(fileName)
         if file.state != '':
-            file.close()
+            self.close(fileName)
 
         self.log_.v('-- delete ' + fileName)
         self.fileSystem_.delete(fileName)
@@ -181,6 +181,7 @@ class Peer(Base):
 
         self.log_.v('-- join')
         status = self.network_.connectTo(DFS(addr, port))
+        self.network_.waitForPropagation()
         return status
 
     # retire from the system
@@ -194,8 +195,7 @@ class Peer(Base):
         if not self.dfs_.online:
             self.log_.v('-- go online')
             self.network_.connect()
-            while not self.network_.editPropagated:
-                time.sleep(.1)
+            self.network_.waitForPropagation()
             self.dfs_.online = True
             return err.OK
         else:
@@ -204,9 +204,8 @@ class Peer(Base):
     # disconnect from the internet
     def goOffline(self):
         if self.dfs_.online:
-            self.log_.v('-- go offline')
-            while not self.network_.editPropagated():
-                time.sleep(.1)
+            self.log_.i('-- go offline')
+            self.network_.waitForPropagation()
             self.network_.disconnect()
             self.dfs_.online = False
             return err.OK
@@ -247,8 +246,7 @@ class Peer(Base):
         return status
 
     def printInfo(self, files):
-        self.log_.v('-- List files')
+        self.log_.i('files:')
         for f in files:
             if not f.isDeleted:
-                self.log_.v(str(f))
-        self.log_.v('-- /List files')
+                self.log_.i('  ' + str(f))

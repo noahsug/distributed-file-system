@@ -69,8 +69,9 @@ class Network(Base):
             return
         self.sender_.updateAll()
 
-    def editPropagated(self):
-        return self.sender_.editPropagated()
+    def waitForPropagation(self):
+        while not self.sender_.editPropagated():
+            time.sleep(.1)
 
     def getState(self):
         if not self.sender_:

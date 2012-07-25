@@ -90,8 +90,12 @@ class PhysicalView(Base):
 
     def writeChunk(self, fileName, chunkNum, data):
         # Assume data is no longer than size CHUNK_SIZE
-        self.lock_.acquire()
         filePath = os.path.join(self.getBasePath(), fileName)
+        size = self.getFileSize(fileName)
+        if size < chunkNum * dfs_state.CHUNK_SIZE:
+            buf = [' '] * (chunkNum * dfs_state.CHUNK_SIZE - size)
+            self.write(fileName, buf, size, len(buf))
+        self.lock_.acquire()
         f = open(filePath, "r+")
         f.seek(chunkNum * dfs_state.CHUNK_SIZE)
         f.write(data)
@@ -100,6 +104,14 @@ class PhysicalView(Base):
         if len(data) < dfs_state.CHUNK_SIZE: # is this the last chunk?
             f.truncate()
 
+        f.close()
+        self.lock_.release()
+
+    def trim(self, fileName, size):
+        self.lock_.acquire()
+        filePath = os.path.join(self.getBasePath(), fileName)
+        f = open(filePath, 'r+')
+        f.truncate(size)
         f.close()
         self.lock_.release()
 

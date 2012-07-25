@@ -101,7 +101,16 @@ class SenderThread(NetworkThread):
             self.work_ = self.workQueue_.pop(0)
             self.processWork()
         else:
-            time.sleep(.05)
+            self.removeDisconnectedListeners()
+            time.sleep(.03)
+
+    def removeDisconnectedListeners(self):
+        self.peerLock_.acquire()
+        for lt in self.listeners_:
+            if not lt.active_:
+                self.log_.v('detected that ' + lt.getConnDFS().id.str + ' has disconnected')
+                self.removeListener(lt)
+        self.peerLock_.release()
 
     def processWork(self):
         if self.work_.source.id == self.dfs_.id:
@@ -128,8 +137,13 @@ class SenderThread(NetworkThread):
         if status < 0:
             self.peerLock_.acquire()
             self.log_.v('trying to send work, but ' + lt.getConnDFS().id.str + ' has disconnected')
-            self.listeners_.remove(lt) # other peer has disconnected
+            self.removeListener()
             self.peerLock_.release()
+
+    def removeListener(self, lt):
+        if lt in self.fileFetchStatus:
+            self.fileFetchStatus.remove(lt)
+        self.listeners_.remove(lt) # other peer has disconnected
 
     def handleUpdate(self):
         lt = self.work_.dest
