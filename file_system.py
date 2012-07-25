@@ -79,6 +79,7 @@ class FileSystem(Base):
             self.log_.e('writing to ' + fileName + ' while not in write mode!')
 
         if file.isOutOfDate(): # conflict, create a second version
+            self.log_.v(fileName + ' is being written to and is out of date. Conflict detected.')
             conflictName = self.resolveConflict(fileName)
             self.physical_.write(conflictName, buf, offset, bufsize)
 
@@ -127,6 +128,7 @@ class FileSystem(Base):
                 self.resolveConflict(file.fileName)
                 newVersionOfLocalFile = localFile
                 newVersionOfLocalFile.latestVersion = file.latestVersion.copy()
+                self.log_.v(localFile.fileName + ' has local changes and is out of date. Conflict detected during update.')
                 status = err.CausedConflict
 
             elif localFile.hasLocalChanges():
