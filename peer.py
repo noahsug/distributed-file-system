@@ -54,7 +54,7 @@ class Peer(Base):
             self.log_.w('tried to open in known mode ' + op)
             return err.InvalidOp
 
-        self.log_.v('opened ' + fileName + ' in ' + op)
+        self.log_.v('-- opened ' + fileName + ' in ' + op)
         return status
 
     def close(self, fileName):
@@ -79,11 +79,14 @@ class Peer(Base):
                 self.log_.v(fileName + ' closed in write mode, but has no local changes')
             file.state = ""
 
-        self.log_.v('closed ' + fileName + ', state is now: ' + file.state)
+        self.log_.v('-- closed ' + fileName + ', state is now: ' + file.state)
         return err.OK
 
-    def read(self, fileName, buf, offset, bufsize):
-        self.log_.v('read ' + fileName)
+    def read(self, fileName, buf, offset=0, bufsize=-1):
+        if bufsize < 0:
+            bufsize = len(buf)
+
+        self.log_.v('-- read ' + fileName)
         if not self.fileSystem_.exists(fileName):
             self.log_.w('tried to read from ' + fileName + ', which doesnt exist')
             return err.FileNotFound
@@ -95,8 +98,11 @@ class Peer(Base):
             return err.FileNotOpen
         return status
 
-    def write(self, fileName, buf, offset, bufsize):
-        self.log_.v('write ' + fileName)
+    def write(self, fileName, buf, offset=0, bufsize=-1):
+        if bufsize < 0:
+            bufsize = len(buf)
+
+        self.log_.v('-- write ' + fileName)
         if not self.fileSystem_.exists(fileName):
             return err.FileNotFound
 
@@ -108,13 +114,12 @@ class Peer(Base):
         return err.OK
 
     def delete(self, fileName):
-        self.log_.v('delete ' + fileName)
+        self.log_.v('-- delete ' + fileName)
         self.fileSystem_.delete(fileName)
         self.network_.fileEdited()
         return err.OK
 
     def listFiles(self, files):
-        self.log_.v('listFiles')
         while len(files) > 0:
             files.pop()
         for f in self.fileSystem_.list():
@@ -124,7 +129,7 @@ class Peer(Base):
 
     # mark the file as stable
     def markStable(self, fileName):
-        self.log_.v('mark stable ' + fileName)
+        self.log_.v('-- mark stable ' + fileName)
         newFileName = fileName + ".stable";
         while self.fileSystem_.exists(newFileName):
             newFileName = newFileName + ".stable"
@@ -134,40 +139,38 @@ class Peer(Base):
 
     # save the most recent version of the file locally
     def pin(self, fileName):
-        self.log_.v('pin ' + fileName)
         if not self.fileSystem_.exists(fileName):
             return err.FileNotFound
 
-        self.log_.v('pin')
+        self.log_.v('-- pin ' + fileName)
         status = self.updateFile(fileName)
         return status
 
     # delete the local copy of the file
     def unpin(self, fileName):
-        self.log_.v('unpin ' + fileName)
         if not self.fileSystem_.exists(fileName):
             return err.FileNotFound
 
-        self.log_.v('unpin')
+        self.log_.v('unpin ' + fileName)
         self.fileSystem_.deleteLocalCopy(fileName)
         return err.OK
 
     # join DFS, connecting to the peer at the given addr and port if given
     def join(self, addr, port):
-        self.log_.v('join')
+        self.log_.v('-- join')
         status = self.network_.connectTo(DFS(addr, port))
         return status
 
     # retire from the system
     def retire(self):
-        self.log_.v('retire')
+        self.log_.v('-- retire')
         self.goOffline()
         return err.OK
 
     # connect to the internet
     def goOnline(self):
         if not self.dfs_.online:
-            self.log_.v('go online')
+            self.log_.v('-- go online')
             self.network_.connect()
             self.dfs_.online = True
             return err.OK
@@ -177,7 +180,7 @@ class Peer(Base):
     # disconnect from the internet
     def goOffline(self):
         if self.dfs_.online:
-            self.log_.v('go offline')
+            self.log_.v('-- go offline')
             self.network_.disconnect()
             self.dfs_.online = False
             return err.OK
@@ -189,7 +192,7 @@ class Peer(Base):
 
     # exits the program
     def exit(self):
-        self.log_.v('exit')
+        self.log_.v('-- exit')
         self.goOffline()
         fs = self.fileSystem_.getState()
         ns = self.network_.getState()

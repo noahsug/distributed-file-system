@@ -11,7 +11,8 @@ def testOfflineUsage():
     p1 = Peer('localhost', 10001, mock_network.Network())
 
     p1.open('boobs.txt', 'w')
-    p1.write('boobs.txt', data, 1, len(data) - 1)
+    p1.write('boobs.txt', data)
+    p1.read('boobs.txt', [0]*100)
     p1.close('boobs.txt')
 
     p1.listFiles([])
