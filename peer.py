@@ -145,6 +145,9 @@ class Peer(Base):
 
     # mark the file as stable
     def markStable(self, fileName):
+        if not self.fileSystem_.exists(fileName):
+            self.log_.w('tried to mark ' + fileName + ' as stable, but doesnt exist')
+            return 1
         self.log_.v('-- mark stable ' + fileName)
         newFileName = fileName + ".stable";
         while self.fileSystem_.exists(newFileName):

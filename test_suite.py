@@ -1,8 +1,9 @@
 #!/usr/bin/python
 
 import time
+import dfs_state
 
-data = '123456789' * 10
+data = '1' * (dfs_state.CHUNK_SIZE + 1)
 
 def testOfflineUsage():
     import mock_network
@@ -14,19 +15,20 @@ def testOfflineUsage():
     p1.write('boobs.txt', data)
     p1.close('boobs.txt')
 
-    p1.open('boobs.txt', 'r')
-    p1.read('boobs.txt', [0]*90)
-    p1.close('boobs.txt')
-
     p1.markStable('boobs.txt')
 
-    p1.delete('boobs.txt')
-
-    p1.open('boobs.txt', 'r')
-    p1.read('boobs.txt', [0]*90)
+    p1.open('boobs.txt', 'w')
+    p1.write('boobs.txt', data, len(data))
+    p1.write('boobs.txt', data, len(data) * 2)
     p1.close('boobs.txt')
 
+    p1.open('boobs.txt.stable', 'r')
+    p1.read('boobs.txt.stable', [0]*90)
+    p1.close('boobs.txt.stable')
+
     p1.listFiles([])
+    p1.delete('boobs.txt')
+    p1.delete('boobs.txt.stable')
     p1.exit()
 
 def testBasicUsage():
