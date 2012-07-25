@@ -86,7 +86,7 @@ class Peer(Base):
         if self.fileSystem_.logical_.fileList_[fileName].state is "r":
             status = self.fileSystem_.readIntoBuffer(fileName, buf, offset, bufsize)
         else:
-            self.log_.w('tried to read from + ' fileName + ' while not in read mode')
+            self.log_.w('tried to read from ' + fileName + ' while not in read mode')
             return err.FileNotOpen
         return status
 
@@ -98,7 +98,7 @@ class Peer(Base):
         if self.fileSystem_.logical_.fileList_[fileName].state is "w":
             self.fileSystem_.write(fileName, buf, offset, bufsize)
         else:
-            self.log_.w('tried to write to + ' fileName + ' while not in write mode')
+            self.log_.w('tried to write to ' + fileName + ' while not in write mode')
             return err.FileNotOpenForWrite
         return err.OK
 

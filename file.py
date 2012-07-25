@@ -36,8 +36,8 @@ class File(Base):
         self.localVersion = version
         self.latestVersion = version
 
-    def setLocalVersion(self, numEdits, numChunks, fileSize, lastEdited):
-        self.localVersion = Version(self.fileName, numEdits, numChunks, fileSize, lastEdited)
+    def setLocalVersion(self, numEdits, fileSize, lastEdited):
+        self.localVersion = Version(self.fileName, numEdits, fileSize, lastEdited)
 
     def getLocalVersion(self):
         return self.localVersion
