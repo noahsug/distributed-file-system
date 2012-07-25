@@ -33,48 +33,72 @@ class Peer(Base):
                     self.fileSystem_.logical_.fileList_[fileName].readCounter += 1
                     self.fileSystem_.logical_.fileList_[fileName].state = "r"
                 else:
+                    self.log_.w('cant open ' + fileName + ' in read mode')
                     return err.CannotOpenFile
             else:
+                self.log_.w('tried to open ' + fileName + ' in read mode, but it doesnt exist')
                 return err.FileNotFound
         elif op is "w":
             if not exists:
                 buf = [' ']
                 self.fileSystem_.physical_.write(fileName, buf, 0, 1)
                 self.fileSystem_.add(fileName, 1)
+                self.log_.v('opened ' + fileName + ' in write mode for the first time, creating file')
             if self.fileSystem_.canWrite(fileName):
                 self.fileSystem_.logical_.fileList_[fileName].state = "w"
             else:
+                self.log_.w('cant open ' + fileName + ' in write mode')
                 return err.CannotOpenFile
         else:
+            self.log_.w('tried to open in known mode ' + op)
             return err.InvalidOp
+
+        self.log_.v('opened ' + fileName + ' in ' + op)
         return status
 
     def close(self, fileName):
+        if not self.fileSystem_.exists(fileName):
+            self.log_.w('tried to close ' + fileName + ', which doesnt exist')
+            return err.FileNotFound
+
         file = self.fileSystem_.logical_.fileList_[fileName]
         if file.state is "":
+            self.log_.v('tried to closed ' + fileName + ', but it was already closed')
             return err.FileNotOpen
         elif file.state is "r":
             if file.readCounter > 0:
                 file.readCounter -= 1
             else:
                 file.state = ""
-        else:
+        else: # state is 'w'
             self.network_.fileEdited()
             file.state = ""
+
+        self.log_.v('closed ' + fileName + ', state is now: ' + file.state)
         return err.OK
 
     def read(self, fileName, buf, offset, bufsize):
+        self.log_.v('read ' + fileName)
+        if not self.fileSystem_.exists(fileName):
+            self.log_.w('tried to read from ' + fileName + ', which doesnt exist')
+            return err.FileNotFound
+
         if self.fileSystem_.logical_.fileList_[fileName].state is "r":
             status = self.fileSystem_.readIntoBuffer(fileName, buf, offset, bufsize)
         else:
+            self.log_.w('tried to read from + ' fileName + ' while not in read mode')
             return err.FileNotOpen
         return status
 
     def write(self, fileName, buf, offset, bufsize):
+        self.log_.v('write ' + fileName)
+        if not self.fileSystem_.exists(fileName):
+            return err.FileNotFound
+
         if self.fileSystem_.logical_.fileList_[fileName].state is "w":
             self.fileSystem_.write(fileName, buf, offset, bufsize)
-            version = self.fileSystem_.getVersion(fileName)
         else:
+            self.log_.w('tried to write to + ' fileName + ' while not in write mode')
             return err.FileNotOpenForWrite
         return err.OK
 
@@ -101,12 +125,20 @@ class Peer(Base):
 
     # save the most recent version of the file locally
     def pin(self, fileName):
+        self.log_.v('pin ' + fileName)
+        if not self.fileSystem_.exists(fileName):
+            return err.FileNotFound
+
         self.log_.v('pin')
         status = self.updateFile(fileName)
         return status
 
     # delete the local copy of the file
     def unpin(self, fileName):
+        self.log_.v('unpin ' + fileName)
+        if not self.fileSystem_.exists(fileName):
+            return err.FileNotFound
+
         self.log_.v('unpin')
         self.fileSystem_.deleteLocalCopy(fileName)
         return err.OK

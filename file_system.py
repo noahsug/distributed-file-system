@@ -55,11 +55,12 @@ class FileSystem(Base):
         else:
             return err.FileOutOfDate
 
-    def add(self, fileName, numChunks):
+    # adds file to the logical view
+    def add(self, fileName, fileSize=None):
         if self.physical_.exists(fileName):
-            self.logical_.add(fileName, self.physical_.getFileSize(fileName), numChunks)
+            self.logical_.add(fileName, self.physical_.getFileSize(fileName))
         else:
-            self.logical_.add(fileName, 0, 0)
+            self.logical_.add(fileName, fileSize)
 
     def delete(self, fileName):
         self.logical_.delete(fileName)
@@ -80,7 +81,7 @@ class FileSystem(Base):
         elif self.logical_.fileList_[fileName].localVersion.isOutOfDate(self.logical_.fileList_[fileName].latestVersion): #local < latest, conflict (update failed)
             conflictName = self.resolveConflict(fileName)
             self.physical_.write(conflictName, buf, offset, bufsize)
-            self.add(conflictName, self.physical_.getNumChunks(conflictName))
+            self.add(conflictName)
             return conflictName
         else: #local > latest, offline edits
             self.physical_.write(fileName, buf, offset, bufsize)
@@ -102,7 +103,7 @@ class FileSystem(Base):
         # TODO make threadsafe
         for file in files.values():
             if file not in self.logical_.fileList_: # new file?
-                self.add(file.fileName, file.latestVersion.numChunks)
+                self.add(file.fileName, file.latestVersion.fileSize)
 
             localFile = self.logical_.fileList_[file.fileName]
             if file.isDeleted: # deleted?
@@ -110,7 +111,7 @@ class FileSystem(Base):
 
             if localFile.hasLocalChanges() and localFile.isOutOfDate(file): # conflict?
                 conflictName = self.resolveConflict(file.fileName)
-                self.add(conflictName, self.physical_.getNumChunks(conflictName))
+                self.add(conflictName)
                 status = err.CausedConflict
         return status
 

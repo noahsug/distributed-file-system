@@ -31,6 +31,10 @@ class Network(Base):
         self.sender_.start()
 
     def connectTo(self, dfs):
+        if not self_.dfs.online:
+            self.log_.w('tried to connectTo while offline')
+            return
+
         self.log_.v('connectTo ' + str(dfs.id))
         self.sender_.connectTo(dfs)
 
@@ -40,6 +44,10 @@ class Network(Base):
 
     # ask each peer for a random file chunk until the file is fully retrieved
     def getFile(self, fileName):
+        if not self_.dfs.online:
+            self.log_.w('tried to getFile while offline')
+            return err.CannotFullyUpdateFile
+
         self.fileSystem_.beginLocalUpdate(fileName)
         self.sender_.beginFileFetch(fileName)
         while not self.sender_.isDoneFileFetch():
@@ -49,6 +57,9 @@ class Network(Base):
         return status
 
     def fileEdited(self):
+        if not self_.dfs.online:
+            self.log_.w('tried to call fileEdited while offline')
+            return
         self.sender_.updateAll()
 
     def getState(self):

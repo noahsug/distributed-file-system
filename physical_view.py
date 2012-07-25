@@ -5,7 +5,7 @@
 import os.path
 import shutil
 
-import dfs_socket
+import dfs_state
 import error as err
 from base import Base
 from lock import Lock
@@ -70,8 +70,8 @@ class PhysicalView(Base):
 
         data = None
         try:
-            f.seek(chunk * dfs_socket.CHUNK_SIZE)
-            data = f.read(dfs_socket.CHUNK_SIZE)
+            f.seek(chunk * dfs_state.CHUNK_SIZE)
+            data = f.read(dfs_state.CHUNK_SIZE)
         except Exception, ex:
             self.log_.e('getChunk - failed to seek to chunk ' + chunk + ' in ' + filePath)
         f.close()
@@ -83,11 +83,11 @@ class PhysicalView(Base):
         self.lock_.acquire()
         filePath = os.path.join(self.getBasePath(), fileName)
         f = open(filePath, "r+")
-        f.seek(chunkNum * dfs_socket.CHUNK_SIZE)
+        f.seek(chunkNum * dfs_state.CHUNK_SIZE)
         f.write(data)
 
         # Resize the file b/c the last chunk may be smaller then CHUNK_SIZE
-        if len(data) < dfs_socket.CHUNK_SIZE: # is this the last chunk?
+        if len(data) < dfs_state.CHUNK_SIZE: # is this the last chunk?
             f.truncate()
 
         f.close()
@@ -97,7 +97,7 @@ class PhysicalView(Base):
         self.lock_.acquire()
         size = self.getFileSize(fileName)
         self.lock_.release()
-        return int(size / dfs_socket.CHUNK_SIZE) + 1
+        return int(size / dfs_state.CHUNK_SIZE) + 1
 
     def copyFile(self, src, des):
         self.lock_.acquire()

@@ -4,6 +4,8 @@
 
 from identification import ID
 
+CHUNK_SIZE = 65536
+
 class DFS:
     def __init__(self, addr='', port=10000):
         self.addr = addr

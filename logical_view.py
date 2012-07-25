@@ -19,9 +19,9 @@ class LogicalView(Base):
         self.fileList_[fileName].chunksOwned = [False] * self.latestVersion.numChunks
         self.fileList_[fileName].numChunksOwned = 0
 
-    def add(self, fileName, fileSize, numChunks):
+    def add(self, fileName, fileSize):
         self.lock_.acquire()
-        f = File(fileName, 1, numChunks, fileSize, self.dfs_.id)
+        f = File(fileName, 1, fileSize, self.dfs_.id)
         self.fileList_[fileName] = f
         self.lock_.release()
 

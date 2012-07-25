@@ -3,7 +3,6 @@
 ##
 import socket
 
-CHUNK_SIZE = 65536
 DATA_TERMINATOR = '\$%\#enndofdata\$%\#'
 timeout = socket.timeout
 

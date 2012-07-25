@@ -6,14 +6,16 @@
 
 from base import Base
 from version import Version
+import dfs_state
 
 class File(Base):
 
-    def __init__(self, fileName, numEdits, numChunks, fileSize, lastEdited):
+    def __init__(self, fileName, numEdits, fileSize, lastEdited):
         self.fileName = fileName
-        self.localVersion = Version(fileName, numEdits, numChunks, fileSize, lastEdited)
+        self.localVersion = Version(fileName, numEdits, fileSize, lastEdited)
         self.latestVersion = self.localVersion
 
+        numChunks = int(fileSize / dfs_state.CHUNK_SIZE)
         self.numChunksOwned = 0
         self.chunksOwned = [False] * numChunks
         self.state = ""
