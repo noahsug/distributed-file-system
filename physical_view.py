@@ -24,6 +24,8 @@ class PhysicalView(Base):
         filePath = os.path.join(self.getBasePath(), fileName)
         size = self.getFileSize(fileName)
         if offset + bufsize > size:
+            self.log_.w('tried to read ' + fileName + ' but size is ' + str(size) +
+                        ' and bufsize + offset = ' + str(offset + bufsize))
             return err.InvalidBufferSize
 
         self.lock_.acquire()

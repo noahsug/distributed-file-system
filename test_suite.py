@@ -12,7 +12,10 @@ def testOfflineUsage():
 
     p1.open('boobs.txt', 'w')
     p1.write('boobs.txt', data)
-    p1.read('boobs.txt', [0]*100)
+    p1.close('boobs.txt')
+
+    p1.open('boobs.txt', 'r')
+    p1.read('boobs.txt', [0]*90)
     p1.close('boobs.txt')
 
     p1.listFiles([])

@@ -53,6 +53,7 @@ class FileSystem(Base):
         if self.isUpToDate(fileName):
             return status
         else:
+            self.log_.v('read ' + fileName + ', which is out of date')
             return err.FileOutOfDate
 
     # adds file to the logical view

@@ -69,6 +69,8 @@ class Peer(Base):
         elif file.state is "r":
             if file.readCounter > 0:
                 file.readCounter -= 1
+                if file.readCounter == 0:
+                    file.state = ''
             else:
                 file.state = ""
         else: # state is 'w'
@@ -86,7 +88,6 @@ class Peer(Base):
         if bufsize < 0:
             bufsize = len(buf)
 
-        self.log_.v('-- read ' + fileName)
         if not self.fileSystem_.exists(fileName):
             self.log_.w('tried to read from ' + fileName + ', which doesnt exist')
             return err.FileNotFound
@@ -96,6 +97,8 @@ class Peer(Base):
         else:
             self.log_.w('tried to read from ' + fileName + ' while not in read mode')
             return err.FileNotOpen
+
+        self.log_.v('-- read ' + fileName + ': ' + str(buf))
         return status
 
     def write(self, fileName, buf, offset=0, bufsize=-1):
@@ -224,7 +227,7 @@ class Peer(Base):
         return status
 
     def printInfo(self, files):
-        self.log_.v('-- Files')
+        self.log_.v('-- List files')
         for f in files:
             self.log_.v(str(f))
-        self.log_.v('-- / end files')
+        self.log_.v('-- /List files')
