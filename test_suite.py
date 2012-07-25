@@ -2,6 +2,12 @@
 
 import time
 
+def testOfflineUsage():
+    import mock_network
+    from peer import Peer
+
+    p1 = Peer('localhost', 10001, mock_network.Network())
+
 def testBasicUsage():
     from peer import Peer
 
@@ -62,5 +68,6 @@ def testSerializer():
     print obj
 
 
+testOfflineUsage()
 #testSerializer()
-testBasicUsage()
+#testBasicUsage()
