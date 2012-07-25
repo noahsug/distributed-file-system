@@ -33,6 +33,10 @@ class Peer(Base):
             return err.CannotOpenFile
 
         status = self.updateFile(fileName)
+        if exists and not self.fileSystem_.exists(fileName):
+            self.log_.w('tried to open file that doesnt exist locally ' + fileName)
+            return err.CannotOpenFile
+
         if op is "r":
             if exists:
                 if self.fileSystem_.canRead(fileName):
@@ -241,7 +245,7 @@ class Peer(Base):
         status = err.OK
         if not self.fileSystem_.exists(fileName):
             return status
-        if not self.fileSystem_.isUpToDate(fileName):
+        if not self.fileSystem_.isUpToDate(fileName) or self.fileSystem_.isMissingChunks(fileName):
             status = self.network_.getFile(fileName)
         return status
 

@@ -2,9 +2,11 @@
 
 import time
 import dfs_state
+import debug
 
 data = '1' * (dfs_state.CHUNK_SIZE + 1)
 data2 = 'abcdefg' * dfs_state.CHUNK_SIZE
+log = debug.Logger('', dfs_state.DFS(' ', 10000))
 
 def changeDevice():
     time.sleep(.5)
@@ -43,6 +45,8 @@ def testOfflineUsage():
     p2.listFiles()
     p2.goOffline()
 
+    p1.unpin('boobs.txt')
+
     p1.listFiles()
     p1.open('boobs.txt', 'r')
     p1.read('boobs.txt', [0]*100)
@@ -55,6 +59,8 @@ def testOfflineUsage():
     p2.delete('boobs.txt')
     p2.delete('boobs.txt.stable')
     p2.exit()
+
+    log.i('Tests Done!')
 
 def testBasicUsage():
     from peer import Peer

@@ -86,6 +86,8 @@ class FileSystem(Base):
             self.physical_.deleteFile(fileName)
 
     def deleteLocalCopy(self, fileName):
+        file = self.logical_.getFile(fileName)
+        file.ownNoChunks()
         self.physical_.deleteFile(fileName)
 
     def isUpToDate(self, fileName):
@@ -209,6 +211,10 @@ class FileSystem(Base):
         new.latestVersion = old.latestVersion.copy()
         new.numChunksOwned = old.numChunksOwned
         new.chunksOwned = list(old.chunksOwned)
+
+    def isMissingChunks(self, fileName):
+        file = self.logical_.getFile(fileName)
+        return file.numChunksOwned < file.localVersion.numChunks
 
     ##
     # Private methods

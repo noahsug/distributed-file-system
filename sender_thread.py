@@ -60,10 +60,9 @@ class SenderThread(NetworkThread):
         self.peerLock_.release()
 
     def beginFileFetch(self, fileName):
-        if len(self.fileFetchStatus) > 0:
-            self.log_.e('!!! beginning file fetch before previous fetch is done!')
         ltList = []
         self.peerLock_.acquire()
+        self.fileFetchStatus = []
         for lt in self.listeners_:
             self.fileFetchStatus.append(lt)
             ltList.append(lt)

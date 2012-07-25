@@ -25,6 +25,11 @@ class File():
         self.chunksOwned = [True] * numChunks
         self.numChunksOwned = numChunks
 
+    def ownNoChunks(self):
+        numChunks = self.localVersion.numChunks
+        self.chunksOwned = [False] * numChunks
+        self.numChunksOwned = 0
+
     def existsLocally(self):
         return self.localVersion.numChunks == self.numChunksOwned
 
@@ -64,4 +69,4 @@ class File():
 
     def __str__(self):
         data = (self.fileName, self.numChunksOwned, self.localVersion.numChunks, self.localVersion, self.latestVersion)
-        return '%s - %d/%d  local: (%s) latest: (%s)' % data
+        return '%s - %d/%d  local: %s latest: %s' % data
