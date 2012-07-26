@@ -36,14 +36,11 @@ def testOfficialUsage():
 
     dv1 = Peer('localhost', 10001)
     dv1.goOnline()
-
     dv2 = Peer('localhost', 10002)
     dv2.goOnline()
-
+    dv2.join(dv1)
     dv3 = Peer('localhost', 10003)
     dv3.goOnline()
-    dv2.join(dv1)
-    dv3.join(dv1)
 
     writeData(dv1, f11)
     writeData(dv1, f12)
@@ -131,6 +128,27 @@ def testOfficialUsage():
 
     dv1.listFiles()
     dv2.listFiles()
+
+    log('--------------------- START OF 7')
+    # 7
+    dv3.join(dv1)
+    dv3.listFiles()
+
+    log('--------------------- START OF 8')
+    # 8
+    dv3.pin(f12 + '.stable')
+    dv3.listFiles()
+
+    log('--------------------- START OF 9')
+    # 9
+
+
+
+
+    dv1.open(f11 + '.p1', 'r')
+    dv1.read(f11 + '.p1')
+    dv1.close(f11 + '.p1')
+
 
     log('--------------------- END')
 

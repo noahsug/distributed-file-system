@@ -102,10 +102,7 @@ class Peer(Base):
         self.log_.v('-- closed ' + fileName + ', state is now: ' + file.state)
         return err.OK
 
-    def read(self, fileName, buf, offset=0, bufsize=-1):
-        if bufsize < 0:
-            bufsize = len(buf)
-
+    def read(self, fileName, buf=None, offset=0, bufsize=-1):
         if not self.fileSystem_.exists(fileName):
             self.log_.i('WARNING: Unable to retreive ' + fileName + '. Aborting read...')
             self.log_.w('tried to read from ' + fileName + ', which doesnt exist')
@@ -121,6 +118,11 @@ class Peer(Base):
                 self.log_.i('WARNING: ' + fileName + ' was not fully retreived. You are reading a partially downloaded file.')
             elif self.fileSystem_.logical_.getFile(fileName).isOutOfDate():
                 self.log_.i('WARNING: ' + fileName + ' could not be retreived from the system. You are reading an out of date file.')
+
+            if not buf:
+                buf = [0] * self.fileSystem_.physical_.getFileSize(fileName)
+            if bufsize < 0:
+                bufsize = len(buf)
             status = self.fileSystem_.readIntoBuffer(fileName, buf, offset, bufsize)
         else:
             self.log_.i('WARNING: Cannot read from ' + fileName + ' because it is not in read mode. Aborting read....')

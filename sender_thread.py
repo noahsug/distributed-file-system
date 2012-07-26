@@ -73,7 +73,7 @@ class SenderThread(NetworkThread):
 
     def editPropagated(self):
         # due to time constraints, I'm using this rather simple implementation
-        time.sleep(.5)
+        time.sleep(1)
         return True
 
     def isConnectedTo(self, dfs):
