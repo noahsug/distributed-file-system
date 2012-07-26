@@ -172,9 +172,9 @@ def testOfficialUsage():
     dv2.listFiles()
     dv4.listFiles()
 
-    dv4.pin(f12)
-    dv4.pin(f31)
+    dv4.pin(f11 + '.p2')
     dv4.pin(f13)
+    dv4.pin(f22)
     time.sleep(.5)
     dv4.listFiles()
     time.sleep(.5)
