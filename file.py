@@ -69,11 +69,14 @@ class File():
     def __str__(self):
         flags = []
         if self.isOutOfDate():
-            flags.append('OutOfDate')
-        if self.hasLocalChanges():
-            flags.append('LocalChanges')
-        if self.existsLocally():
-            flags.append('HasLocalCopy')
+            flags.append('Obsolete')
+        elif self.hasLocalChanges():
+            flags.append('Local Uncomitted')
+        elif self.existsLocally():
+            flags.append('Local')
+        elif self.numChunksOwned > 0:
+            flags.append('Partial')
+
         flagText = ''
         if len(flags) > 0:
             flagText = ' - ' + ' '.join(flags)

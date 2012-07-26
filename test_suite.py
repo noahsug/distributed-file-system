@@ -91,15 +91,15 @@ def testOfficialUsage():
 
     log('--------------------- START OF 5')
     # 5
+    dv1.pin(f11)
     dv1.goOffline()
     dv2.goOffline()
     dv2.open(f11, 'w')
-    dv2.write(f11, ' THIS TEXT IS BEING INSERTED AT OFFSET 400 BY DEVICE 1 ', 400)
+    dv2.write(f11, ' THIS TEXT IS BEING INSERTED AT OFFSET 400 BY DEVICE 2 ', 400)
     dv2.close(f11)
     dv1.open(f11, 'w')
-    dv1.write(f11, ' I REFUSE TO WRITE WHAT DEVICE ONE SAID, BUT I AM STILL INSERTING AT OFFSET 400 ', 400)
-    f11p1 = 'f11.txt.p1'
-    dv1.close(f11p1)
+    dv1.write(f11, ' I REFUSE TO WRITE WHAT DEVICE 2 SAID, BUT I AM STILL INSERTING AT OFFSET 400 ', 400)
+    dv1.close(f11)
 
     dv1.listFiles()
     dv2.listFiles()
