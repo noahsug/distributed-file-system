@@ -16,6 +16,7 @@ def testOfficialUsage():
     f11 = 'f11.txt'
     f12 = 'f12.docx'
     f13 = 'f13.pptx'
+    f14 = 'f14.txt'
     f21 = 'f21.executable'
     f22 = 'f22.zip'
     f31 = 'f31.jpg'
@@ -58,7 +59,10 @@ def testOfficialUsage():
     dv1.listFiles()
     dv2.listFiles()
     dv1.markStable(f11)
+    dv1.markStable(f12)
+    dv1.markStable(f13)
     dv2.markStable(f21)
+    dv2.markStable(f22)
 
     dv1.listFiles()
     dv2.listFiles()
@@ -109,6 +113,22 @@ def testOfficialUsage():
     dv2.listFiles()
 
     dv2.goOnline()
+    dv1.listFiles()
+    dv2.listFiles()
+
+    log('--------------------- START OF 6a')
+    # 6 a
+    dv1.open(f14, 'w')
+    dv1.write(f14, 'this file is f14' * 20000)
+    dv1.close(f14)
+
+    dv1.listFiles()
+    dv2.listFiles()
+
+    log('--------------------- START OF 6b')
+    # 6 b
+    dv1.delete(f11)
+
     dv1.listFiles()
     dv2.listFiles()
 

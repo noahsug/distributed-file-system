@@ -96,6 +96,7 @@ class Peer(Base):
             if file.hasLocalChanges and self.dfs_.online:
                 file.latestVersion = file.localVersion.copy()
                 self.network_.fileEdited()
+                self.network_.waitForPropagation()
             file.state = ""
 
         self.log_.v('-- closed ' + fileName + ', state is now: ' + file.state)
@@ -161,6 +162,7 @@ class Peer(Base):
         self.log_.i('Deleting ' + fileName + '...')
         self.fileSystem_.delete(fileName)
         self.network_.fileEdited()
+        self.network_.waitForPropagation()
         return err.OK
 
     def listFiles(self, files=[]):

@@ -157,10 +157,9 @@ class FileSystem(Base):
         status = err.OK
         self.updateLock_.acquire()
         for file in files.values():
-            if file.isDeleted:
-                continue
-
             if not self.exists(file.fileName):
+                if file.isDeleted:
+                    continue
                 self.add(file.fileName, file.latestVersion.fileSize)
                 self.logical_.getFile(file.fileName).setNewVersion(file.latestVersion)
                 self.log_.v(file.fileName + ' has been CREATED during an update: size ' + str(file.latestVersion.fileSize))
