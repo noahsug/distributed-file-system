@@ -175,7 +175,14 @@ def testOfficialUsage():
     dv4.pin(f12)
     dv4.pin(f31)
     dv4.pin(f13)
+    time.sleep(.5)
     dv4.listFiles()
+    time.sleep(.5)
+    dv4.listFiles()
+    time.sleep(.5)
+    dv4.listFiles()
+
+    dv5.listFiles()
 
     log('--------------------- END')
 
