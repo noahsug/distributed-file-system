@@ -169,6 +169,9 @@ class FileSystem(Base):
                 continue
 
             if file.latestVersion == localFile.latestVersion and file.hasLocalChanges():
+#                if localFile.hasLocalChanges() && localFile.localVersion.lastEdited > file.localVersion.lastEdited:
+#                    self.log_.d('both files have local changes, choose one to keep')
+#                    continue
                 # file from a peer that just connected, propagate its local changes
                 file.latestVersion = file.localVersion.copy()
 

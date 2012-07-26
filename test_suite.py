@@ -44,6 +44,9 @@ def testOfficialUsage():
     dv2.join(dv1)
     dv3 = Peer('localhost', 10003)
     dv3.goOnline()
+    dv5 = Peer('localhost', 10005)
+    dv5.goOnline()
+    dv5.join(dv2)
 
     writeData(dv1, f11)
     writeData(dv1, f12)
@@ -180,7 +183,7 @@ def testOfficialUsage():
     dv2.exit()
     dv3.exit()
     dv4.exit()
-
+    dv5.exit()
 
 def testTwoPeerUsage():
     from peer import Peer

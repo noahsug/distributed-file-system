@@ -150,7 +150,7 @@ class SenderThread(NetworkThread):
         fs, ns = self.work_.data
         status = self.fileSystem_.updateFiles(fs)
         self.connectToMultiple(ns)
-        if status > err.CausedConflict:
+        if status == err.CausedConflict:
             self.log_.v('update from ' + str(lt.getConnDFS().id) + ' caused conflict, updating all peers')
             self.updateAll()
 
