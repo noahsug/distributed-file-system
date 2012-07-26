@@ -142,7 +142,8 @@ class SenderThread(NetworkThread):
     def removeListener(self, lt):
         if lt in self.fileFetchStatus:
             self.fileFetchStatus.remove(lt)
-        self.listeners_.remove(lt) # other peer has disconnected
+        if lt in self.listeners_:
+            self.listeners_.remove(lt) # other peer has disconnected
 
     def handleUpdate(self):
         lt = self.work_.dest

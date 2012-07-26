@@ -6,7 +6,7 @@
 
 from version import Version
 
-class File():
+class File:
     def __init__(self, fileName, numEdits, fileSize, lastEdited):
         self.fileName = fileName
         self.localVersion = Version(fileName, numEdits, fileSize, lastEdited)
