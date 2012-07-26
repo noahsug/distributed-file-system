@@ -302,6 +302,7 @@ class Peer(Base):
 
     def printInfo(self, files):
         self.log_.i('Files:')
+        files = sorted(files, key = lambda file: str(file))
         for f in files:
             if not f.isDeleted:
                 self.log_.i('  ' + str(f))
