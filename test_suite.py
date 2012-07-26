@@ -89,16 +89,17 @@ def testOfficialUsage():
     dv1.listFiles()
     dv2.listFiles()
 
-    log('--------------------- START OF 4')
+    log('--------------------- START OF 5')
     # 5
     dv1.goOffline()
     dv2.goOffline()
     dv2.open(f11, 'w')
     dv2.write(f11, ' THIS TEXT IS BEING INSERTED AT OFFSET 400 BY DEVICE 1 ', 400)
     dv2.close(f11)
-    dv1.open(f12, 'w')
-    dv1.write(f12, ' I REFUSE TO WRITE WHAT DEVICE ONE SAID, BUT I AM STILL INSERTING AT OFFSET 400 ', 400)
-    dv1.close(f12)
+    dv1.open(f11, 'w')
+    dv1.write(f11, ' I REFUSE TO WRITE WHAT DEVICE ONE SAID, BUT I AM STILL INSERTING AT OFFSET 400 ', 400)
+    f11p1 = 'f11.txt.p1'
+    dv1.close(f11p1)
 
     dv1.listFiles()
     dv2.listFiles()

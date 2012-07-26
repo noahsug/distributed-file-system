@@ -18,6 +18,7 @@ class ListenerThread(NetworkThread):
         self.data_ = ''
 
     def connect(self, dfs):
+        self.log_.d('connecting to ' + dfs.id.str)
         self.connDFS_ = dfs
         self.socket_ = dfs_socket.DFSSocket()
         try:
@@ -104,4 +105,5 @@ class ListenerThread(NetworkThread):
 
     def tearDown(self):
         self.socket_.close()
+        self.log_.d('socked to ' + self.connDFS_.id.str + ' closed')
 

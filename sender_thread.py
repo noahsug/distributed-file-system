@@ -207,8 +207,20 @@ class SenderThread(NetworkThread):
         self.addWork(w)
 
     def close(self):
+        self.log_.d('close started')
         self.peerLock_.acquire()
         for listener in self.listeners_:
             listener.close()
         self.peerLock_.release()
+        self.waitForListenersToClose()
         NetworkThread.close(self)
+        self.log_.d('close finished')
+
+    def waitForListenersToClose(self):
+        self.log_.d('waitForListenersToClose started')
+        self.peerLock_.acquire()
+        lts = list(self.listeners_)
+        self.peerLock_.release()
+        for lt in lts:
+            lt.join()
+        self.log_.d('waitForListenersToClose finished')

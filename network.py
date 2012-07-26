@@ -30,6 +30,7 @@ class Network(Base):
         self.sender_ = SenderThread(self.dfs_, self.fileSystem_)
         self.sender_.connectToMultiple(self.knownPeers_)
         self.sender_.start()
+        self.log_.v('connected done')
 
     def connectTo(self, dfs):
         if not self.dfs_.online:
@@ -40,9 +41,12 @@ class Network(Base):
         self.sender_.connectTo(dfs)
 
     def disconnect(self):
+        self.knownPeers_ = self.sender_.getPeers()
         self.newPeerListener_.close()
         self.sender_.close()
+        self.sender_.join()
         self.newPeerListener_.join()
+        self.log_.v('disonnected done')
 
     # ask each peer for a random file chunk until the file is fully retrieved
     def getFile(self, fileName):

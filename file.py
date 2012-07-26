@@ -67,5 +67,17 @@ class File():
         return self.localVersion.numEdits < self.latestVersion.numEdits
 
     def __str__(self):
-        data = (self.fileName, self.numChunksOwned, self.localVersion.numChunks, self.localVersion, self.latestVersion)
-        return '%s - %d/%d  local: (%s) latest: (%s)' % data
+        flags = []
+        if self.isOutOfDate():
+            flags.append('OutOfDate')
+        if self.hasLocalChanges():
+            flags.append('LocalChanges')
+        if self.existsLocally():
+            flags.append('HasLocalCopy')
+        flagText = ''
+        if len(flags) > 0:
+            flagText = ' - ' + ' '.join(flags)
+
+        data = (self.fileName, self.numChunksOwned, self.localVersion.numChunks,
+                self.localVersion, self.latestVersion, flagText)
+        return '%s - %d/%d  local: (%s) latest: (%s)%s' % data

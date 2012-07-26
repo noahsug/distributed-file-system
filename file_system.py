@@ -179,7 +179,7 @@ class FileSystem(Base):
                 # we made local changes while offline and another peer also made changes, conflict!
                 self.resolveConflict(file.fileName)
                 localFile = self.logical_.getFile(file.fileName)
-                self.log_.v(fileName + ' has local changes and is out of date. Conflict detected during update.')
+                self.log_.v(file.fileName + ' has local changes and is out of date. Conflict detected during update.')
                 status = err.CausedConflict
 
             if localFile.isOutOfDate(file):
