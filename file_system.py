@@ -74,6 +74,8 @@ class FileSystem(Base):
             return None
         val = self.logical_.fileList_[fileName].chunksOwned
         self.updateLock_.release()
+        self.log_.d(str(self.logical_.fileList_[fileName]) + ' - getting missing chunks')
+        self.log_.d(fileName + ' owns these chunks: ' + str(val))
         return val
 
     def canRead(self, fileName):
@@ -194,6 +196,12 @@ class FileSystem(Base):
 
         self.updateLock_.release()
         return status
+
+    def copyFile(self, name, newName):
+        self.physical_.copyFile(name, newName)
+        self.add(newName)
+        old = self.logical_.getFile(name)
+        new = self.logical_.getFile(newName)
 
     def beginLocalUpdate(self, fileName):
         self.updateLock_.acquire()

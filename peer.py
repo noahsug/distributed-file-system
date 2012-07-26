@@ -226,8 +226,8 @@ class Peer(Base):
         if not self.dfs_.online:
             self.log_.i('Going online...')
             self.network_.connect()
-            self.network_.waitForPropagation()
             self.dfs_.online = True
+            self.network_.waitForPropagation()
             return err.OK
         else:
             return err.AlreadyOnline
@@ -236,9 +236,9 @@ class Peer(Base):
     def goOffline(self):
         if self.dfs_.online:
             self.log_.i('Going offline...')
-            self.network_.waitForPropagation()
             self.network_.disconnect()
             self.dfs_.online = False
+            self.network_.waitForPropagation()
             return err.OK
         else:
             return err.AlreadyOffline

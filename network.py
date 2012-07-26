@@ -42,6 +42,7 @@ class Network(Base):
     def disconnect(self):
         self.newPeerListener_.close()
         self.sender_.close()
+        self.newPeerListener_.join()
 
     # ask each peer for a random file chunk until the file is fully retrieved
     def getFile(self, fileName):

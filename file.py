@@ -41,6 +41,7 @@ class File():
     def setNewVersion(self, version):
         self.localVersion = version.copy()
         self.latestVersion = version.copy()
+        self.ownNoChunks()
 
     def setLocalVersion(self, numEdits, fileSize, lastEdited):
         self.localVersion = Version(self.fileName, numEdits, fileSize, lastEdited)

@@ -40,9 +40,9 @@ def testOfficialUsage():
     dv2.goOnline()
 
     dv3 = Peer('localhost', 10003)
-#    dv3.goOnline()
+    dv3.goOnline()
     dv2.join(dv1)
-#    dv3.join(dv1)
+    dv3.join(dv1)
 
     writeData(dv1, f11)
     writeData(dv1, f12)
@@ -51,7 +51,7 @@ def testOfficialUsage():
     writeData(dv2, f21)
     writeData(dv2, f22)
 
-#    writeData(dv3, f31)
+    writeData(dv3, f31)
 
     log('--------------------- START OF 1 & 2')
     # 1 & 2
@@ -60,39 +60,42 @@ def testOfficialUsage():
     time.sleep(2)
     dv1.listFiles()
     dv2.listFiles()
-#    dv1.markStable(f11)
-#    dv2.markStable(f21)
-#
-#    dv1.listFiles()
-#    dv2.listFiles()
-#
-#    log('--------------------- START OF 3')
-#    # 3
-#    dv2.open(f11, 'r')
-#    dv2.open(f12, 'r')
-#    dv2.read(f11, [0]*200)
-#    dv2.read(f12, [0]*200)
-#    dv2.close(f11)
-#    dv2.close(f12)
-#
-#    dv1.listFiles()
-#    dv2.listFiles()
-#
-#    log('--------------------- START OF 4')
-#    # 4
-#    dv1.goOffline()
-#    dv2.open(f12, 'w')
-#    dv2.write(f12, 'I am device2 and I like to eat cheese')
-#    dv2.close(f12)
-#    dv2.open(f13, 'w')
-#    dv2.write(f13, 'I am device2 and I hate babbies', 10)
-#    dv2.close(f13)
-#    dv1.goOnline()
-#
-#    dv1.listFiles()
-#    dv2.listFiles()
-#
-#    log('--------------------- END')
+    dv1.markStable(f11)
+    dv2.markStable(f21)
+
+    dv1.listFiles()
+    dv2.listFiles()
+
+    log('--------------------- START OF 3')
+    # 3
+    dv2.open(f11, 'r')
+    dv2.open(f12, 'r')
+    dv2.read(f11, [0]*200)
+    dv2.read(f12, [0]*200)
+    dv2.close(f11)
+    dv2.close(f12)
+
+    dv1.listFiles()
+    dv2.listFiles()
+
+    log('--------------------- START OF 4')
+    # 4
+    dv1.goOffline()
+    dv2.open(f11, 'w')
+    dv2.write(f11, 'I am device2 and I like to eat cheese')
+    dv2.close(f11)
+    dv2.open(f12, 'w')
+    dv2.write(f12, 'I am device2 and I hate babbies', 10)
+    dv2.close(f12)
+    dv1.goOnline()
+
+    dv1.listFiles()
+    dv2.listFiles()
+    time.sleep(1)
+    dv1.listFiles()
+    dv2.listFiles()
+
+    log('--------------------- END')
 
     dv1.exit()
     dv2.exit()

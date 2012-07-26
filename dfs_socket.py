@@ -6,7 +6,7 @@ import socket
 DATA_TERMINATOR = '\$%\#enndofdata\$%\#'
 timeout = socket.timeout
 
-socket.setdefaulttimeout(2)
+socket.setdefaulttimeout(1)
 
 class DFSSocket(socket.socket):
     def __init__(self):
