@@ -186,7 +186,11 @@ class FileSystem(Base):
                 if localFile.latestVersion.numEdits == file.latestVersion.numEdits:
                     self.log_.w(localFile.fileName + ' have same # of edits, yet is out of date')
                 self.log_.v('updated ' + localFile.fileName)
-                localFile.setNewVersion(file.latestVersion.copy())
+                if localFile.numChunksOwned > 0:
+                    self.log_.v(file.fileName + ' has out of date local data, only latest is being updated')
+                    localFile.latestVersion = file.latestVersion.copy()
+                else:
+                    localFile.setNewVersion(file.latestVersion.copy())
 
         for file in self.list():
             if file.hasLocalChanges():

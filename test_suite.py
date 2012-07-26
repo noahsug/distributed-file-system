@@ -57,9 +57,6 @@ def testOfficialUsage():
     # 1 & 2
     dv1.listFiles()
     dv2.listFiles()
-    time.sleep(2)
-    dv1.listFiles()
-    dv2.listFiles()
     dv1.markStable(f11)
     dv2.markStable(f21)
 
