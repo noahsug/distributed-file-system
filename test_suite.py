@@ -4,92 +4,97 @@ import time
 import dfs_state
 import debug
 
-log = debug.Logger('', dfs_state.DFS(' ', 10000))
+logger = debug.Logger('', dfs_state.DFS(' ', 10000))
+def log(msg):
+    logger.i(msg)
 
 def changeDevice():
     time.sleep(.5)
 
 def testOfficialUsage():
     # Init
-    from peer import Peer
-    data = {
-        'f11.txt': None,
-        'f12.docx': None,
-        'f13.pptx': None,
-        'f21.executable': None,
-        'f22.zip': None,
-        'f31.jpg': None
-        }
+    f11 = 'f11.txt'
+    f12 = 'f12.docx'
+    f13 = 'f13.pptx'
+    f21 = 'f21.executable'
+    f22 = 'f22.zip'
+    f31 = 'f31.jpg'
 
-    for file in data:
+    fileNames = [f11, f12, f13, f21, f22, f31]
+    from peer import Peer
+    data = { }
+    for file in fileNames:
         f = open('files/' + file, 'r')
         txt = f.read()
         data[file] = [c for c in txt]
-
-    dv1 = Peer('localhost', 10001)
-    dv1.goOnline()
-    dv2 = Peer('localhost', 10002)
-    dv2.goOnline()
-    dv3 = Peer('localhost', 10003)
-    dv3.goOnline()
-    dv2.join(dv1)
-    dv3.join(dv1)
 
     def writeData(d, fileName):
         d.open(fileName, 'w')
         d.write(fileName, data[fileName])
         d.close(fileName)
 
-    writeData(dv1, 'f11.txt')
-    writeData(dv1, 'f12.docx')
-    writeData(dv1, 'f13.pptx')
+    dv1 = Peer('localhost', 10001)
+    dv1.goOnline()
 
-    writeData(dv2, 'f21.executable')
-    writeData(dv2, 'f22.zip')
+    dv2 = Peer('localhost', 10002)
+    dv2.goOnline()
 
-    writeData(dv3, 'f31.jpg')
+    dv3 = Peer('localhost', 10003)
+#    dv3.goOnline()
+    dv2.join(dv1)
+#    dv3.join(dv1)
 
-    # 1
+    writeData(dv1, f11)
+    writeData(dv1, f12)
+    writeData(dv1, f13)
+
+    writeData(dv2, f21)
+    writeData(dv2, f22)
+
+#    writeData(dv3, f31)
+
+    log('--------------------- START OF 1 & 2')
+    # 1 & 2
     dv1.listFiles()
     dv2.listFiles()
-    dv1.markStable('f11.txt')
-    dv2.markStable('f21.executable')
-
-    # 2
+    time.sleep(2)
     dv1.listFiles()
     dv2.listFiles()
-
-    # 3
-    dv2.open('f11.txt', 'r')
-    dv2.open('f12.docx', 'r')
-    dv2.read('f11.txt', [0]*200)
-    dv2.read('f12.docx', [0]*200)
-    dv2.close('f11.txt')
-    dv2.close('f12.docx')
-
-#    dv1.open('f22.zip', 'r')
-#    dv1.read('f22.zip', [0]*1000)
-#    dv1.close('f22.zip')
-
-    dv1.listFiles()
-    dv2.listFiles()
+#    dv1.markStable(f11)
+#    dv2.markStable(f21)
+#
+#    dv1.listFiles()
+#    dv2.listFiles()
+#
+#    log('--------------------- START OF 3')
+#    # 3
+#    dv2.open(f11, 'r')
+#    dv2.open(f12, 'r')
+#    dv2.read(f11, [0]*200)
+#    dv2.read(f12, [0]*200)
+#    dv2.close(f11)
+#    dv2.close(f12)
+#
+#    dv1.listFiles()
+#    dv2.listFiles()
+#
+#    log('--------------------- START OF 4')
+#    # 4
+#    dv1.goOffline()
+#    dv2.open(f12, 'w')
+#    dv2.write(f12, 'I am device2 and I like to eat cheese')
+#    dv2.close(f12)
+#    dv2.open(f13, 'w')
+#    dv2.write(f13, 'I am device2 and I hate babbies', 10)
+#    dv2.close(f13)
+#    dv1.goOnline()
+#
+#    dv1.listFiles()
+#    dv2.listFiles()
+#
+#    log('--------------------- END')
 
     dv1.exit()
-
-    dv2.open('f13.pptx', 'w')
-    dv2.listFiles()
-    dv2.write('f13.pptx', [c for c in 'heeeeey gguyyyyzzzz'])
-    dv2.close('f13.pptx.p2')
-
-    dv2.listFiles()
-    dv2.open('f13.pptx', 'r')
-    dv2.read('f13.pptx', [0]*18)
-    dv2.close('f13.pptx')
-
-    dv2.open('f13.pptx.p2', 'r')
-    dv2.read('f13.pptx.p2', [0]*18)
-    dv2.close('f13.pptx.p2')
-
     dv2.exit()
     dv3.exit()
 

@@ -93,7 +93,10 @@ class FileSystem(Base):
     # adds file to the logical view
     def add(self, fileName, fileSize=None):
         if self.physical_.exists(fileName):
+            if fileSize != None:
+                self.log_.e('adding ' + fileName + ' and specified file size, but already exists locally!')
             self.logical_.add(fileName, self.physical_.getFileSize(fileName))
+            self.logical_.getFile(fileName).ownAllChunks()
         else:
             self.logical_.add(fileName, fileSize)
 
@@ -158,8 +161,7 @@ class FileSystem(Base):
             if not self.exists(file.fileName):
                 self.add(file.fileName, file.latestVersion.fileSize)
                 self.logical_.getFile(file.fileName).setNewVersion(file.latestVersion)
-                self.logical_.getFile(file.fileName).ownNoChunks()
-                self.log_.v(file.fileName + ' has been CREATED during an update')
+                self.log_.v(file.fileName + ' has been CREATED during an update: size ' + str(file.latestVersion.fileSize))
 
             localFile = self.logical_.getFile(file.fileName)
             if file.isDeleted and not localFile.isDeleted:
@@ -174,16 +176,15 @@ class FileSystem(Base):
             if localFile.hasLocalChanges() and localFile.isOutOfDate(file):
                 # we made local changes while offline and another peer also made changes, conflict!
                 self.resolveConflict(file.fileName)
-                self.log_.v(localFile.fileName + ' has local changes and is out of date. Conflict detected during update.')
+                localFile = self.logical_.getFile(file.fileName)
+                self.log_.v(fileName + ' has local changes and is out of date. Conflict detected during update.')
                 status = err.CausedConflict
 
             if localFile.isOutOfDate(file):
                 if localFile.latestVersion.numEdits == file.latestVersion.numEdits:
-                    self.log_.w(localFile.fileName + ' have same # of edits, yet is out of date: ' +
-                                str(localFile.latestVersion.numEdits) + ', ' + str(file.latestVersion.numEdits) + ', ' +
-                                localFile.latestVersion.lastEdited + ', ' + file.latestVersion.lastEdited)
+                    self.log_.w(localFile.fileName + ' have same # of edits, yet is out of date')
                 self.log_.v('updated ' + localFile.fileName)
-                localFile.latestVersion = file.latestVersion.copy()
+                localFile.setNewVersion(file.latestVersion.copy())
 
         for file in self.list():
             if file.hasLocalChanges():
@@ -232,16 +233,6 @@ class FileSystem(Base):
     def isDeleted(self, fileName):
         return self.logical_.getFile(fileName).isDeleted
 
-    def copyFile(self, name, newName):
-        self.physical_.copyFile(name, newName)
-        self.add(newName)
-        old = self.logical_.getFile(name)
-        new = self.logical_.getFile(newName)
-        new.localVersion = old.localVersion.copy()
-        new.latestVersion = old.latestVersion.copy()
-        new.numChunksOwned = old.numChunksOwned
-        new.chunksOwned = list(old.chunksOwned)
-
     def isMissingChunks(self, fileName):
         file = self.logical_.getFile(fileName)
         return file.numChunksOwned < file.localVersion.numChunks
@@ -261,8 +252,6 @@ class FileSystem(Base):
 
         self.physical_.copyFile(fileName, conflictName)
         self.add(conflictName)
-        new = self.logical_.getFile(conflictName)
-        new.ownAllChunks()
         self.deleteLocalCopy(fileName)
 
         self.logical_.getFile(conflictName).state = oldState

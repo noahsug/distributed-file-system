@@ -55,8 +55,7 @@ class Peer(Base):
             if not exists:
                 buf = [' ']
                 self.fileSystem_.physical_.fillEmptyFile(fileName, 1)
-                self.fileSystem_.add(fileName, 1)
-                self.fileSystem_.logical_.getFile(fileName).ownAllChunks()
+                self.fileSystem_.add(fileName)
                 self.log_.v('creating ' + fileName + ' b/c opened it in write mode for the first time')
             if self.fileSystem_.canWrite(fileName):
                 if not self.fileSystem_.physical_.exists(fileName):

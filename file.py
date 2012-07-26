@@ -5,7 +5,6 @@
 ##
 
 from version import Version
-import dfs_state
 
 class File():
     def __init__(self, fileName, numEdits, fileSize, lastEdited):
@@ -13,9 +12,8 @@ class File():
         self.localVersion = Version(fileName, numEdits, fileSize, lastEdited)
         self.latestVersion = self.localVersion.copy()
 
-        numChunks = int(fileSize / dfs_state.CHUNK_SIZE) + 1
         self.numChunksOwned = 0
-        self.chunksOwned = [False] * numChunks
+        self.chunksOwned = [False] * self.localVersion.numChunks
         self.state = ""
         self.readCounter = 0
         self.isDeleted = False
