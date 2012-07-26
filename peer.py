@@ -210,7 +210,7 @@ class Peer(Base):
             return err.FileNotFound
         # TODO check write / read access
         self.log_.i('Pinning ' + fileName + '...')
-        status = self.updateFile(fileName)
+        status = self.updateFile(fileName, 3)
         return status
 
     # delete the local copy of the file
@@ -290,13 +290,13 @@ class Peer(Base):
                 self.fileSystem_.loadFromState(fs)
                 self.network_.loadFromState(ns)
 
-    def updateFile(self, fileName):
+    def updateFile(self, fileName, timeout=30):
         status = err.OK
         if not self.fileSystem_.exists(fileName):
             return status
 
         if self.fileSystem_.isMissingChunks(fileName) or not self.fileSystem_.isUpToDate(fileName):
-            status = self.network_.getFile(fileName, 3)
+            status = self.network_.getFile(fileName, timeout)
 
         return status
 

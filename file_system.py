@@ -95,8 +95,6 @@ class FileSystem(Base):
     # adds file to the logical view
     def add(self, fileName, fileSize=None):
         if self.physical_.exists(fileName):
-            if fileSize != None:
-                self.log_.e('adding ' + fileName + ' and specified file size, but already exists locally!')
             self.logical_.add(fileName, self.physical_.getFileSize(fileName))
             self.logical_.getFile(fileName).ownAllChunks()
         else:
@@ -201,10 +199,10 @@ class FileSystem(Base):
         return status
 
     def copyFile(self, name, newName):
-        self.physical_.copyFile(name, newName)
-        self.add(newName)
-        old = self.logical_.getFile(name)
-        new = self.logical_.getFile(newName)
+        if self.physical_.exists(name):
+            self.physical_.copyFile(name, newName)
+        size = self.logical_.getFile(name).latestVersion.fileSize
+        self.add(newName, size)
 
     def beginLocalUpdate(self, fileName):
         self.updateLock_.acquire()
