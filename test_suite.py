@@ -27,7 +27,10 @@ def testOfficialUsage():
     for file in fileNames:
         f = open('files/' + file, 'r')
         txt = f.read()
-        data[file] = [c for c in txt]
+        if file == f22:
+            data[file] = [c for c in txt]
+        else:
+            data[file] = [c for c in txt] * 5
 
     def writeData(d, fileName):
         d.open(fileName, 'w')
@@ -141,20 +144,42 @@ def testOfficialUsage():
 
     log('--------------------- START OF 9')
     # 9
+    dv3.open(f12 + '.stable', 'r')
+    content = dv3.read(f12 + '.stable')
+    dv3.close(f12 + '.stable')
+    dv3.open(f12, 'w')
+    content = content[:10000]
+    dv3.write(f12, content, 0, len(content), True)
+    dv3.close(f12)
+    dv3.markStable(f12)
 
+    dv1.listFiles()
+    dv2.listFiles()
+    dv3.listFiles()
 
+    log('--------------------- START OF 10')
+    # 10
+    dv3.retire()
+    dv1.listFiles()
+    dv2.listFiles()
+    dv4 = Peer('localhost', 10004)
+    dv4.goOnline()
+    dv4.join(dv1)
+    dv1.listFiles()
+    dv2.listFiles()
+    dv4.listFiles()
 
-
-    dv1.open(f11 + '.p1', 'r')
-    dv1.read(f11 + '.p1')
-    dv1.close(f11 + '.p1')
-
+    dv4.pin(f12)
+    dv4.pin(f31)
+    dv4.pin(f13)
+    dv4.listFiles()
 
     log('--------------------- END')
 
     dv1.exit()
     dv2.exit()
     dv3.exit()
+    dv4.exit()
 
 
 def testTwoPeerUsage():

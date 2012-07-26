@@ -133,10 +133,23 @@ class Peer(Base):
             text = ''.join(buf)
         except Exception:
             text = str(buf)
-        self.log_.i('Read ' + fileName + ':\n"""\n' + text + '\n"""')
-        return status
+        textToPrint = text
+        if len(textToPrint) > 500:
+            textToPrint = textToPrint[:500]
+        self.log_.i('Read ' + fileName + ':\n"""\n' + textToPrint + '\n"""')
+        return text
 
-    def write(self, fileName, buf, offset=0, bufsize=-1):
+    def getSize(self, fileName):
+        if self.fileSystem_.physical_.exists(fileName):
+            return self.fileSystem_.physical_.getFileSize(fileName)
+        return 0
+
+    def hasLocalCopy(self, fileName):
+        if not self.fileSystem_.exists(fileName):
+            return False
+        return self.fileSystem_.isMissingChunks(fileName) or not self.fileSystem_.isUpToDate(fileName)
+
+    def write(self, fileName, buf, offset=0, bufsize=-1, deleteOriginalContent=False):
         if bufsize < 0:
             bufsize = len(buf)
 
@@ -146,6 +159,8 @@ class Peer(Base):
             return err.FileNotFound
 
         if self.fileSystem_.logical_.fileList_[fileName].state is "w":
+            if deleteOriginalContent:
+                self.fileSystem_.physical_.trim(fileName, 1)
             self.fileSystem_.write(fileName, buf, offset, bufsize)
         else:
             self.log_.i('WARNING: Cannot write to ' + fileName + ' because it is not in write mode. Aborting write....')
@@ -281,7 +296,7 @@ class Peer(Base):
             return status
 
         if self.fileSystem_.isMissingChunks(fileName) or not self.fileSystem_.isUpToDate(fileName):
-            status = self.network_.getFile(fileName)
+            status = self.network_.getFile(fileName, 3)
 
         return status
 

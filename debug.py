@@ -5,11 +5,12 @@
 import threading
 
 console = open('.output.log', 'w')
+lockConsole = open('.lock_output.log', 'w')
 
 class Logger:
     lock_ = threading.Lock()
     lastPeer = ''
-    verb = ['V', '!!!D', 'W!!', 'E!!!!', '']
+    verb = ['V', '!!!D', 'W!!', 'E!!!!', '', 'L']
     used = [0, 1, 2, 3, 4]
 
     def __init__(self, tag, dfs):
@@ -31,6 +32,9 @@ class Logger:
     def i(self, msg):
         self.log(4, msg)
 
+    def l(self, msg):
+        self.log(5, msg)
+
     def log(self, verbosity, msg):
         if not verbosity in Logger.used:
             return
@@ -45,5 +49,8 @@ class Logger:
             print msg
 
         msg = '%s> %s # %s: %s' % (str(self.dfs_.id), v, self.tag_, msg)
-        console.write(msg + '\n')
+        if v == 'L':
+            lockConsole.write(msg + '\n')
+        else:
+            console.write(msg + '\n')
         Logger.lock_.release()

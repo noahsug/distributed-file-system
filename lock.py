@@ -14,9 +14,9 @@ class Lock(Base):
         self.tag_ = tag
 
     def acquire(self):
-#        self.log_.d('AQUIRE ' + self.tag_)
+        self.log_.l('AQUIRE ' + self.tag_)
         self.lock_.acquire()
 
     def release(self):
-#        self.log_.d('RELEASE ' + self.tag_)
+        self.log_.l('RELEASE ' + self.tag_)
         self.lock_.release()

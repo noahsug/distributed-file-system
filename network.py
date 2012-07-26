@@ -49,7 +49,7 @@ class Network(Base):
         self.log_.v('disonnected done')
 
     # ask each peer for a random file chunk until the file is fully retrieved
-    def getFile(self, fileName):
+    def getFile(self, fileName, timeout=30):
         if not self.dfs_.online:
             return err.CannotFullyUpdateFile
 
@@ -62,7 +62,7 @@ class Network(Base):
             count += 1
             if count == 5:
                 self.log_.i('Downloading ' + fileName + '...')
-            if count > 30: # wait at most 3 seconds to get updated file
+            if count > timeout:
                 self.log_.w('getting ' + fileName + ' timed out')
                 break
 
